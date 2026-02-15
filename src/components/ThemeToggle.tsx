@@ -8,7 +8,7 @@ const ThemeToggle: React.FC = () => {
     return (
         <button
             onClick={toggleTheme}
-            className="fixed top-6 right-6 z-50 p-3 rounded-full bg-white/10 backdrop-blur-md border border-charcoal/10 shadow-lifted hover:scale-110 transition-transform group dark:border-white/20 dark:bg-black/20"
+            className="fixed bottom-32 right-6 z-50 p-3 rounded-full bg-white/10 backdrop-blur-md border border-charcoal/10 shadow-lifted hover:scale-110 transition-transform group dark:border-white/20 dark:bg-black/20"
             aria-label="Toggle Theme"
         >
             {/* Modern Animated SVG Icon */}
