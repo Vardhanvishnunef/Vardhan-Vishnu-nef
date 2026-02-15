@@ -21,10 +21,7 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
           <a href="https://www.instagram.com/vardhanvishnu.nef/" target="_blank" rel="noopener noreferrer" className="hidden sm:block text-[10px] font-bold uppercase tracking-[0.2em] text-muted hover:text-charcoal transition-colors">
             @vardhanvishnu.nef
           </a>
-          <button className="flex items-center gap-2 group">
-            <span className="text-[10px] font-bold uppercase tracking-widest text-muted group-hover:text-charcoal">Menu</span>
-            <span className="material-symbols-outlined text-charcoal text-xl">menu</span>
-          </button>
+
         </div>
       </header>
 
