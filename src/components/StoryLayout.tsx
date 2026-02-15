@@ -26,8 +26,8 @@ const StoryLayout: React.FC<StoryLayoutProps> = ({ story, onNavigate }) => {
         // Polaroid images: /public/images/stories/[slug]/*.{jpg,png,webp} (excluding hero/thumbnail)
 
         // Note: In Vite, import.meta.glob keys are relative to project root
-        const allCarouselImages = import.meta.glob('/public/images/stories/*/carousel/*.{jpg,jpeg,png,webp}', { eager: true, as: 'url' });
-        const allStoryImages = import.meta.glob('/public/images/stories/*/*.{jpg,jpeg,png,webp}', { eager: true, as: 'url' });
+        const allCarouselImages = import.meta.glob('/public/images/stories/*/carousel/*.webp', { eager: true, as: 'url' });
+        const allStoryImages = import.meta.glob('/public/images/stories/*/*.webp', { eager: true, as: 'url' });
 
         // Filter for current story
         const currentCarouselPaths = Object.keys(allCarouselImages).filter(path =>

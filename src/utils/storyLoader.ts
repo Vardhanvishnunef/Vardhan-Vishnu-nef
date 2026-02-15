@@ -26,8 +26,10 @@ export const getAllStories = (): StoryData[] => {
     });
 
     // 2. Load all potential image files (hero.* and thumbnail.*)
-    // We scan for common image formats
-    const imageModules = import.meta.glob('/public/images/stories/*/*.{png,jpg,jpeg,webp,avif}', {
+    // We scan for common image formats, now prioritized to webp
+    // IMPORTANT: Keys returned by glob are based on actual file casing on disk.
+    // Our optimization script ensures everything is lowercase .webp
+    const imageModules = import.meta.glob('/public/images/stories/*/*.webp', {
         eager: true,
         as: 'url'
     });
