@@ -79,7 +79,7 @@ const Logo: React.FC<LogoProps> = ({ className = "h-10", variant = 'auto', inter
             </svg>
 
             <img
-                src="/images/logo.webp"
+                src="images/logo.webp"
                 alt="Vardhan Vishnu Photography"
                 className="w-full h-full object-contain"
                 style={{
