@@ -32,14 +32,14 @@ const StoryLayout: React.FC<StoryLayoutProps> = ({ story, onNavigate }) => {
         // Filter for current story
         const currentCarouselPaths = Object.keys(allCarouselImages).filter(path =>
             path.includes(`/stories/${story.slug}/carousel/`)
-        ).map(path => allCarouselImages[path].replace(/^\/public\//, ''));
+        ).map(path => import.meta.env.BASE_URL + path.replace(/^\/public\//, ''));
 
         const currentPolaroidPaths = Object.keys(allStoryImages).filter(path =>
             path.includes(`/stories/${story.slug}/`) &&
             !path.includes('hero.') &&
             !path.includes('thumbnail.') &&
             !path.includes('/carousel/') // Exclude carousel images from polaroids
-        ).map(path => allStoryImages[path].replace(/^\/public\//, ''));
+        ).map(path => import.meta.env.BASE_URL + path.replace(/^\/public\//, ''));
 
         // Randomize polaroids if needed, or just take them all.
         // User asked for "remaining photos will stay in main folder and randomly picked"

@@ -46,10 +46,11 @@ export const getAllStories = (): StoryData[] => {
         if (!heroImage) {
             // value is the resolved URL path (e.g., /src/assets/...) or public path
             // keys in imageModules are like /public/images/stories/divya/hero.webp
+            // Manually construct path to avoid import/asset ambiguities with public folder
             const heroKey = Object.keys(imageModules).find(key =>
                 key.startsWith(`${storyFolderPath}/hero.`)
             );
-            heroImage = heroKey ? imageModules[heroKey].replace(/^\/public\//, '') : '';
+            heroImage = heroKey ? import.meta.env.BASE_URL + heroKey.replace(/^\/public\//, '') : '';
         }
 
         // Auto-detect thumbnail if not provided
@@ -58,7 +59,7 @@ export const getAllStories = (): StoryData[] => {
             const thumbKey = Object.keys(imageModules).find(key =>
                 key.startsWith(`${storyFolderPath}/thumbnail.`)
             );
-            thumbnailUrl = thumbKey ? imageModules[thumbKey].replace(/^\/public\//, '') : '';
+            thumbnailUrl = thumbKey ? import.meta.env.BASE_URL + thumbKey.replace(/^\/public\//, '') : '';
         }
 
         return {
