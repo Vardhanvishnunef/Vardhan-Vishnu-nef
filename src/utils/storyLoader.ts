@@ -49,7 +49,7 @@ export const getAllStories = (): StoryData[] => {
             const heroKey = Object.keys(imageModules).find(key =>
                 key.startsWith(`${storyFolderPath}/hero.`)
             );
-            heroImage = heroKey ? imageModules[heroKey] : '';
+            heroImage = heroKey ? imageModules[heroKey].replace(/^\/public\//, '') : '';
         }
 
         // Auto-detect thumbnail if not provided
@@ -58,7 +58,7 @@ export const getAllStories = (): StoryData[] => {
             const thumbKey = Object.keys(imageModules).find(key =>
                 key.startsWith(`${storyFolderPath}/thumbnail.`)
             );
-            thumbnailUrl = thumbKey ? imageModules[thumbKey] : '';
+            thumbnailUrl = thumbKey ? imageModules[thumbKey].replace(/^\/public\//, '') : '';
         }
 
         return {

@@ -3,8 +3,8 @@
     "client": "Aisha & Kabir",
     "location": "Udaipur",
     "date": "Oct '23",
-    "heroImage": "/images/stories/aisha-kabir/hero.webp",
-    "thumbnailUrl": "/images/stories/aisha-kabir/thumbnail.webp",
+    "heroImage": "images/stories/aisha-kabir/hero.webp",
+    "thumbnailUrl": "images/stories/aisha-kabir/thumbnail.webp",
     "description": "A celebration of love amidst the royal heritage of Udaipur. Every moment was a testament to their journey, captured in the golden light of the desert sun.",
     "slug": "aisha-kabir"
 }
