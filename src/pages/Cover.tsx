@@ -1,7 +1,5 @@
-
-import React from 'react';
-import { STATIC_IMAGES } from '../constants';
-import ParallaxWrapper from '../components/ParallaxWrapper';
+import React, { useEffect, useState } from 'react';
+import { SiteConfig } from '../types';
 import Logo from '../components/Logo';
 
 interface CoverProps {
@@ -9,42 +7,42 @@ interface CoverProps {
 }
 
 const Cover: React.FC<CoverProps> = ({ onOpen }) => {
+  const [config, setConfig] = useState<SiteConfig | null>(null);
+
+  useEffect(() => {
+    fetch('data/site-config.json')
+      .then(res => res.json())
+      .then(setConfig)
+      .catch(err => console.error('Failed to load cover config:', err));
+  }, []);
+
+  if (!config) return <div className="min-h-screen bg-limestone" />;
+
   return (
-    <div className="h-screen w-full flex flex-col items-center justify-between py-16 px-6 relative overflow-hidden transition-colors duration-500 dark:bg-[#111]">
-      <header className="text-center z-10 animate-[fadeIn_1s_ease-out]">
-        <div className="w-full max-w-md md:max-w-xl mx-auto mb-8 px-4 cursor-pointer">
-          {/* Logo Component handles blending */}
-          <Logo className="w-full h-auto" interactive={true} highContrast={true} />
+    <div
+      className="min-h-screen bg-limestone flex flex-col items-center justify-center cursor-pointer group px-6"
+      onClick={onOpen}
+    >
+      <div className="w-full max-w-lg space-y-20">
+        <div className="relative aspect-[4/5] overflow-hidden grayscale contrast-125 transition-all duration-1000 group-hover:grayscale-0 group-hover:scale-[1.02] shadow-lifted">
+          <img
+            src={config.cover.hero}
+            alt="Cover Hero"
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 bg-charcoal/10 mix-blend-overlay"></div>
         </div>
-        <p className="text-xs font-medium tracking-[0.15em] text-muted uppercase">Portfolio '24</p>
-      </header>
 
-      <ParallaxWrapper className="relative w-full max-w-sm aspect-[3/4] group cursor-pointer" onClick={onOpen}>
-        <div className="absolute inset-0 bg-paper shadow-floating p-4 transition-transform duration-700 ease-out group-hover:scale-105 group-hover:-translate-y-4 group-hover:rotate-1">
-          <div className="w-full h-full relative overflow-hidden bg-gray-100 grayscale hover:grayscale-0 transition-all duration-700">
-            <img
-              src={STATIC_IMAGES.cover.hero}
-              className="w-full h-full object-cover"
-              alt="Hero cover portrait"
-            />
-            <div className="absolute inset-0 bg-gradient-to-tr from-black/20 via-transparent to-white/10 pointer-events-none"></div>
+        <div className="space-y-8 flex flex-col items-center">
+          <div className="h-16 md:h-20">
+            <Logo className="h-full w-56 md:w-72" />
+          </div>
+          <div className="flex flex-col items-center gap-4">
+            <span className="text-[10px] font-bold uppercase tracking-[0.5em] text-muted animate-pulse">Enter Portfolio</span>
+            <div className="h-12 w-[1px] bg-charcoal/20 group-hover:h-16 transition-all duration-700"></div>
           </div>
         </div>
-      </ParallaxWrapper>
-
-      <footer className="w-full flex flex-col items-center gap-4 z-10">
-        <button
-          onClick={onOpen}
-          className="group relative flex flex-col items-center gap-2"
-        >
-          <div className="h-16 w-[1px] bg-muted/30 overflow-hidden relative">
-            <div className="h-full w-full bg-primary absolute top-0 animate-slide-down"></div>
-          </div>
-          <span className="text-xs font-bold tracking-[0.3em] uppercase text-primary group-hover:tracking-[0.4em] transition-all">
-            Open
-          </span>
-        </button>
-      </footer>
+      </div>
     </div>
   );
 };

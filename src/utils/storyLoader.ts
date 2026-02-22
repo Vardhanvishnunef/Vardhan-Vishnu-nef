@@ -31,7 +31,8 @@ export const getAllStories = (): StoryData[] => {
     // Our optimization script ensures everything is lowercase .webp
     const imageModules = import.meta.glob('/public/images/stories/*/*.webp', {
         eager: true,
-        as: 'url'
+        query: '?url',
+        import: 'default'
     });
 
     const stories: StoryData[] = Object.keys(metadataModules).map((path) => {

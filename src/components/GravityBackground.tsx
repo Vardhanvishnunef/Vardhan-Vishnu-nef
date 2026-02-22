@@ -67,11 +67,8 @@ const renderShape = (shape: string, size: number) => {
 
 const FloatingShape = ({ item, mouseX, mouseY }: { item: FloatingItem, mouseX: any, mouseY: any }) => {
     // Parallax effect: moves opposite to mouse, scaling with depth
-    const x = useTransform(mouseX, (val: number) => val * item.depth * 100 * -1);
-    const y = useTransform(mouseY, (val: number) => val * item.depth * 100 * -1);
-
-    // Continuous drift animation
-    const driftDuration = 20 + Math.random() * 20; // 20-40s duration
+    const x = useTransform(mouseX, (val: number) => val * item.depth * 150 * -1);
+    const y = useTransform(mouseY, (val: number) => val * item.depth * 150 * -1);
 
     return (
         <motion.div
@@ -81,22 +78,25 @@ const FloatingShape = ({ item, mouseX, mouseY }: { item: FloatingItem, mouseX: a
                 top: `${item.y}%`,
                 x,
                 y,
-                rotate: item.rotation,
                 width: item.size,
                 height: item.size,
             }}
-            animate={{
-                x: [0, Math.random() * 40 - 20, 0],
-                y: [0, Math.random() * 40 - 20, 0],
-                rotate: [item.rotation, item.rotation + 180, item.rotation],
-            }}
-            transition={{
-                duration: driftDuration,
-                repeat: Infinity,
-                ease: "linear",
-            }}
         >
-            {renderShape(item.shape, item.size)}
+            <motion.div
+                className="w-full h-full"
+                animate={{
+                    rotate: [0, 360],
+                    x: [0, item.size * 0.5, 0, -item.size * 0.5, 0],
+                    y: [0, -item.size * 0.5, 0, item.size * 0.5, 0],
+                }}
+                transition={{
+                    duration: 10 + item.depth * 20,
+                    repeat: Infinity,
+                    ease: "linear",
+                }}
+            >
+                {renderShape(item.shape, item.size)}
+            </motion.div>
         </motion.div>
     );
 };
@@ -106,27 +106,27 @@ const GravityBackground: React.FC = () => {
     const mouseX = useMotionValue(0);
     const mouseY = useMotionValue(0);
 
-    // Smooth out mouse movements
-    const smoothX = useSpring(mouseX, { stiffness: 50, damping: 20 });
-    const smoothY = useSpring(mouseY, { stiffness: 50, damping: 20 });
+    // Smooth out mouse movements with better spring settings
+    const smoothX = useSpring(mouseX, { stiffness: 30, damping: 15, mass: 1 });
+    const smoothY = useSpring(mouseY, { stiffness: 30, damping: 15, mass: 1 });
 
     useEffect(() => {
-        // Generate random floating items
-        const newItems: FloatingItem[] = Array.from({ length: 15 }).map((_, i) => ({
+        const newItems: FloatingItem[] = Array.from({ length: 18 }).map((_, i) => ({
             id: i,
-            x: Math.random() * 100, // percentage
-            y: Math.random() * 100, // percentage
-            size: Math.random() * 20 + 10, // 10px to 30px
+            x: Math.random() * 100,
+            y: Math.random() * 100,
+            size: Math.random() * 25 + 15,
             rotation: Math.random() * 360,
             shape: SHAPES[Math.floor(Math.random() * SHAPES.length)],
-            depth: Math.random() * 0.5 + 0.1, // 0.1 to 0.6
+            depth: Math.random() * 0.4 + 0.1,
         }));
         setItems(newItems);
 
         const handleMouseMove = (e: MouseEvent) => {
-            // Normalize mouse position -0.5 to 0.5
-            mouseX.set((e.clientX / window.innerWidth) - 0.5);
-            mouseY.set((e.clientY / window.innerHeight) - 0.5);
+            const nx = (e.clientX / window.innerWidth) - 0.5;
+            const ny = (e.clientY / window.innerHeight) - 0.5;
+            mouseX.set(nx);
+            mouseY.set(ny);
         };
 
         window.addEventListener('mousemove', handleMouseMove);
@@ -134,7 +134,7 @@ const GravityBackground: React.FC = () => {
     }, [mouseX, mouseY]);
 
     return (
-        <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden opacity-100 select-none">
+        <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden select-none">
             {items.map((item) => (
                 <FloatingShape
                     key={item.id}

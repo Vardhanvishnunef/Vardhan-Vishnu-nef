@@ -13,7 +13,6 @@ const Navigation: React.FC<NavigationProps> = ({ active, onNavigate }) => {
     { id: 'index', icon: 'folder_open', label: 'Index' },
     { id: 'stills', icon: 'photo_library', label: 'Stills' },
     { id: 'stack', icon: 'layers', label: 'Stack' },
-    { id: 'animate', icon: 'movie', label: 'AI' },
     { id: 'info', icon: 'person', label: 'Info' },
   ];
 
@@ -24,9 +23,8 @@ const Navigation: React.FC<NavigationProps> = ({ active, onNavigate }) => {
           <button
             key={item.id}
             onClick={() => onNavigate(item.id as Page)}
-            className={`flex flex-col items-center gap-1.5 flex-1 transition-all duration-300 ${
-              active === item.id ? 'text-primary' : 'text-muted hover:text-charcoal'
-            }`}
+            className={`flex flex-col items-center gap-1.5 flex-1 transition-all duration-300 ${active === item.id ? 'text-primary' : 'text-muted hover:text-charcoal'
+              }`}
           >
             <span className={`material-symbols-outlined text-[24px] md:text-[28px] ${active === item.id ? 'font-variation-settings-"FILL" 1' : ''}`}>
               {item.icon}

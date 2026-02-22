@@ -1,7 +1,5 @@
-
-import React, { useState } from 'react';
-import { Page } from '../types';
-import { MOCK_STILLS } from '../constants';
+import React, { useState, useEffect } from 'react';
+import { Page, SiteConfig } from '../types';
 import Navigation from '../components/Navigation';
 import Logo from '../components/Logo';
 
@@ -10,16 +8,26 @@ interface StillsProps {
 }
 
 const Stills: React.FC<StillsProps> = ({ onNavigate }) => {
+  const [config, setConfig] = useState<SiteConfig | null>(null);
   const [activeFilter, setActiveFilter] = useState('All');
   const filters = ['All', 'Portraits', 'Objects'];
 
-  const filteredItems = MOCK_STILLS.filter(item =>
+  useEffect(() => {
+    fetch('data/site-config.json')
+      .then(res => res.json())
+      .then(setConfig)
+      .catch(err => console.error('Failed to load stills config:', err));
+  }, []);
+
+  if (!config) return <div className="min-h-screen bg-limestone flex items-center justify-center"><p className="text-[10px] font-bold uppercase tracking-widest animate-pulse">Gathering Moments...</p></div>;
+
+  const filteredItems = config.stills.items.filter(item =>
     activeFilter === 'All' || item.category === activeFilter
   );
 
   return (
     <div className="min-h-screen pb-32 transition-colors duration-500">
-      <header className="sticky top-0 z-40 bg-limestone/95 dark:bg-[#1a1918]/95 backdrop-blur-md border-b border-border-paper/30 dark:border-white/10">
+      <header className="sticky top-0 z-40 bg-limestone/95 backdrop-blur-md border-b border-border-paper/30">
         <div className="flex items-center justify-between px-6 py-5">
           <div className="h-12 md:h-14">
             <Logo className="h-full w-40 md:w-56" />
@@ -61,9 +69,9 @@ const Stills: React.FC<StillsProps> = ({ onNavigate }) => {
       <main className="max-w-6xl mx-auto pt-12 px-6">
         <div className="mb-16 md:flex justify-between items-end">
           <div>
-            <h1 className="text-5xl md:text-6xl font-light tracking-tight">Stills</h1>
+            <h1 className="text-5xl md:text-6xl font-light tracking-tight">{config.stills.title}</h1>
             <p className="text-sm text-muted mt-4 max-w-sm leading-relaxed font-serif italic">
-              A meticulous segregation of moments, exploring the tactile essence of light across subjects.
+              {config.stills.description}
             </p>
           </div>
           <div className="mt-8 md:mt-0">

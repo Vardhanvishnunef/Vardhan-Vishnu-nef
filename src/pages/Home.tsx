@@ -1,8 +1,5 @@
-
-import React from 'react';
-import { Page } from '../types';
-import { MOCK_ITEMS, STATIC_IMAGES } from '../constants';
-import ParallaxWrapper from '../components/ParallaxWrapper';
+import React, { useEffect, useState } from 'react';
+import { Page, SiteConfig } from '../types';
 import Navigation from '../components/Navigation';
 import Logo from '../components/Logo';
 
@@ -11,28 +8,38 @@ interface HomeProps {
 }
 
 const Home: React.FC<HomeProps> = ({ onNavigate }) => {
+  const [config, setConfig] = useState<SiteConfig | null>(null);
+
+  useEffect(() => {
+    fetch('data/site-config.json')
+      .then(res => res.json())
+      .then(setConfig)
+      .catch(err => console.error('Failed to load home config:', err));
+  }, []);
+
+  if (!config) return <div className="min-h-screen bg-limestone flex items-center justify-center"><p className="text-[10px] font-bold uppercase tracking-widest animate-pulse">Loading Environment...</p></div>;
+
   return (
     <div className="min-h-screen pb-32 transition-colors duration-500">
-      <header className="sticky top-0 z-40 bg-limestone/95 dark:bg-[#1a1918]/95 backdrop-blur-md px-6 py-4 flex justify-between items-center border-b border-charcoal/5 dark:border-white/10">
+      <header className="sticky top-0 z-40 bg-limestone/95 backdrop-blur-md px-6 py-4 flex justify-between items-center border-b border-charcoal/5">
         <div className="h-14 md:h-16 flex items-center">
           <Logo className="h-full w-48 md:w-64" />
         </div>
         <div className="flex items-center gap-6">
-          <a href="https://www.instagram.com/vardhanvishnu.nef/" target="_blank" rel="noopener noreferrer" className="hidden sm:block text-[10px] font-bold uppercase tracking-[0.2em] text-muted hover:text-charcoal transition-colors">
-            @vardhanvishnu.nef
+          <a href={`https://www.instagram.com/${config.info.contact.instagram}/`} target="_blank" rel="noopener noreferrer" className="hidden sm:block text-[10px] font-bold uppercase tracking-[0.2em] text-muted hover:text-charcoal transition-colors">
+            @{config.info.contact.instagram}
           </a>
-
         </div>
       </header>
 
       <main className="max-w-6xl mx-auto pt-12 px-6">
         <div className="mb-16">
-          <h1 className="text-5xl md:text-7xl font-extrabold tracking-tighter text-charcoal">Selections</h1>
-          <p className="text-[10px] md:text-xs text-muted font-bold tracking-[0.3em] mt-4 uppercase">Cinematic Documentary • 2024</p>
+          <h1 className="text-5xl md:text-7xl font-extrabold tracking-tighter text-charcoal">{config.home.title}</h1>
+          <p className="text-[10px] md:text-xs text-muted font-bold tracking-[0.3em] mt-4 uppercase">{config.home.subtitle}</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-24">
-          {MOCK_ITEMS.map((item, idx) => (
+          {config.home.items.map((item, idx) => (
             <section
               key={item.id}
               className={`group flex flex-col ${idx % 2 === 1 ? 'md:mt-32' : ''}`}
@@ -44,7 +51,6 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
                     className="w-full h-full object-cover grayscale contrast-110 brightness-95 group-hover:grayscale-0 group-hover:scale-105 transition-all duration-1000 ease-out"
                     alt={item.title}
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
                 </div>
                 <div className="mt-6 flex justify-between items-baseline">
                   <div>
@@ -71,19 +77,20 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
               <p className="text-xs text-muted font-bold tracking-[0.2em] mt-2 uppercase">Live Feed Updates</p>
             </div>
             <a
-              href="https://www.instagram.com/vardhanvishnu.nef/"
+              href={`https://www.instagram.com/${config.info.contact.instagram}/`}
               target="_blank"
+              rel="noopener noreferrer"
               className="px-6 py-3 border border-charcoal text-[10px] font-bold uppercase tracking-widest hover:bg-charcoal hover:text-white transition-all"
             >
-              Follow @vardhanvishnu.nef
+              Follow @{config.info.contact.instagram}
             </a>
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {STATIC_IMAGES.home.instagram_grid.map((url, i) => (
+            {config.home.instagram_grid.map((url, i) => (
               <div key={i} className="aspect-square bg-paper border border-border-paper shadow-flat overflow-hidden group cursor-pointer">
                 <img
-                  src={`${url}?auto=format&fit=crop&q=60&w=400`}
+                  src={url}
                   className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500"
                   alt="IG item"
                 />

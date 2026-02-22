@@ -8,6 +8,19 @@ interface ArchiveListProps {
 }
 
 const ArchiveList: React.FC<ArchiveListProps> = ({ onNavigate }) => {
+    const [clickCount, setClickCount] = React.useState(0);
+
+    const handleArchiveTitleClick = () => {
+        const newCount = clickCount + 1;
+        setClickCount(newCount);
+        if (newCount >= 5) {
+            onNavigate('admin');
+            setClickCount(0);
+        }
+        // Reset count after 2 seconds of inactivity
+        setTimeout(() => setClickCount(0), 2000);
+    };
+
     return (
         <div className="min-h-screen flex relative">
             <aside className="hidden md:flex fixed left-0 top-0 bottom-0 w-24 border-r border-border-paper/40 items-center justify-center pointer-events-none z-10">
@@ -18,10 +31,15 @@ const ArchiveList: React.FC<ArchiveListProps> = ({ onNavigate }) => {
 
             <main className="flex-1 md:ml-24 max-w-4xl pt-16 md:pt-32 pb-40 px-6 md:px-16">
                 <header className="mb-16">
-                    <div className="md:hidden mb-8">
+                    <div className="md:hidden mb-8" onClick={handleArchiveTitleClick}>
                         <h1 className="text-4xl font-extrabold tracking-widest text-charcoal/10 uppercase">Archive</h1>
                     </div>
-                    <p className="text-[10px] font-bold uppercase tracking-[0.4em] text-muted mb-4">Cinematic Stories</p>
+                    <p
+                        className="text-[10px] font-bold uppercase tracking-[0.4em] text-muted mb-4 cursor-default select-none"
+                        onClick={handleArchiveTitleClick}
+                    >
+                        Cinematic Stories
+                    </p>
                     <div className="h-[2px] w-16 bg-primary/40"></div>
                 </header>
 

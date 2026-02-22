@@ -29,5 +29,46 @@ export interface StoryData {
   slug: string;
 }
 
+export interface Thought {
+  role: 'admin' | 'user';
+  text: string;
+}
+
+export interface SiteConfig {
+  cover: { hero: string };
+  home: {
+    title: string;
+    subtitle: string;
+    items: PortfolioItem[];
+    instagram_grid: string[];
+  };
+  stills: {
+    title: string;
+    description: string;
+    items: PortfolioItem[];
+  };
+  info: {
+    name: string;
+    role: string;
+    profile: string;
+    quote: string;
+    bio: string;
+    creative_thoughts: Thought[];
+    contact: {
+      email: string;
+      instagram: string;
+      location: string;
+      availability: string;
+    };
+  };
+  stack: {
+    main: string;
+    sections: {
+      title: string;
+      items: { name: string; details: string; }[];
+    }[];
+  };
+}
+
 // Page type is now a string to support dynamic 'story-[slug]' routes
-export type Page = 'cover' | 'home' | 'index' | 'stills' | 'stack' | 'info' | 'animate' | string;
+export type Page = 'cover' | 'home' | 'index' | 'stills' | 'stack' | 'info' | 'admin' | string;

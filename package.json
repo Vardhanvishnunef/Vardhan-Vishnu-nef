@@ -5,14 +5,22 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "admin": "node scripts/admin-server.js",
     "build": "vite build",
     "preview": "vite preview",
     "predeploy": "npm run build",
-    "deploy": "gh-pages -d dist"
+    "deploy": "gh-pages -d dist -t"
   },
   "dependencies": {
-    "@google/genai": "^1.41.0",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/multer": "^2.0.0",
+    "cors": "^2.8.6",
+    "dotenv": "^17.3.1",
+    "exif-reader": "^2.0.3",
+    "express": "^5.2.1",
     "framer-motion": "^12.34.0",
+    "multer": "^2.0.2",
     "react": "^19.2.4",
     "react-dom": "^19.2.4"
   },
