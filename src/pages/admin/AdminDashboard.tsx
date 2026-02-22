@@ -19,6 +19,8 @@ const AdminDashboard: React.FC<Props> = ({ onNavigate }) => {
     const [storyImages, setStoryImages] = useState<string[]>([]);
     const [isSaving, setIsSaving] = useState(false);
     const [message, setMessage] = useState('');
+    const [isServerOnline, setIsServerOnline] = useState(false);
+    const [deployLog, setDeployLog] = useState('');
 
     // Story Creation State
     const [newStory, setNewStory] = useState({ client: '', location: '', date: '', slug: '' });
@@ -79,6 +81,23 @@ const AdminDashboard: React.FC<Props> = ({ onNavigate }) => {
             setAllImages(images);
         };
         indexImages();
+
+        // Check if admin server is online
+        const checkServer = async () => {
+            try {
+                const res = await fetch('http://localhost:3001/api/save-config', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({}) // Empty probe
+                });
+                setIsServerOnline(true);
+            } catch (e) {
+                setIsServerOnline(false);
+            }
+        };
+        checkServer();
+        const interval = setInterval(checkServer, 5000);
+        return () => clearInterval(interval);
     }, [onNavigate]);
 
     useEffect(() => {
@@ -204,24 +223,51 @@ const AdminDashboard: React.FC<Props> = ({ onNavigate }) => {
                             onClick={async () => {
                                 setIsSaving(true);
                                 setMessage('Deploying to production...');
+                                setDeployLog('');
                                 try {
                                     const res = await fetch('http://localhost:3001/api/deploy', { method: 'POST' });
-                                    if (res.ok) setMessage('Deployed successfully!');
-                                    else setMessage('Deploy failed.');
+                                    const data = await res.json();
+                                    if (res.ok) {
+                                        setMessage('Deployed successfully!');
+                                    } else {
+                                        setMessage(`Deploy failed: ${data.error || 'Unknown error'}`);
+                                        if (data.details) setDeployLog(data.details);
+                                    }
                                 } catch (err) {
-                                    setMessage('Deploy server error.');
+                                    setMessage('Deploy server error: Connection refused.');
                                 } finally {
                                     setIsSaving(false);
                                 }
                             }}
-                            disabled={isSaving}
-                            className="px-6 py-3 bg-primary text-white text-[10px] font-bold uppercase tracking-widest hover:bg-red-700 disabled:opacity-50 shadow-lifted"
+                            disabled={isSaving || !isServerOnline}
+                            className={`px-6 py-3 text-white text-[10px] font-bold uppercase tracking-widest disabled:opacity-50 shadow-lifted transition-all ${!isServerOnline ? 'bg-stone-400' : 'bg-primary hover:bg-red-700'}`}
                         >
-                            Deploy to Live
+                            {!isServerOnline ? 'Server Offline' : 'Deploy to Live'}
                         </button>
                         <button onClick={() => onNavigate('home')} className="px-6 py-3 border border-charcoal text-[10px] font-bold uppercase tracking-widest hover:bg-charcoal hover:text-white transition-all">Exit</button>
                     </div>
                 </div>
+
+                {/* Status Bar */}
+                {!isServerOnline && (
+                    <div className="mb-8 p-4 bg-red-50 border border-red-100 flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div>
+                            <p className="text-[10px] font-bold uppercase tracking-widest text-red-600">Local Admin Server Disconnected</p>
+                        </div>
+                        <p className="text-[9px] font-medium text-red-500/80">Running `npm run admin` in your terminal is required for saving changes and deployment.</p>
+                    </div>
+                )}
+
+                {deployLog && (
+                    <div className="mb-8 p-4 bg-stone-900 border border-stone-800">
+                        <div className="flex justify-between items-center mb-2">
+                            <p className="text-[8px] font-mono text-stone-500 uppercase">Deployment Error Details</p>
+                            <button onClick={() => setDeployLog('')} className="text-[8px] text-white hover:text-primary uppercase font-bold">Close</button>
+                        </div>
+                        <pre className="text-[9px] font-mono text-red-400 whitespace-pre-wrap">{deployLog}</pre>
+                    </div>
+                )}
 
                 {/* Tabs */}
                 <div className="flex gap-1 border-b border-charcoal/10 mb-8 overflow-x-auto no-scrollbar">

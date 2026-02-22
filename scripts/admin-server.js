@@ -153,14 +153,37 @@ app.post('/api/toggle-carousel', (req, res) => {
 // Deploy to Production
 app.post('/api/deploy', (req, res) => {
     console.log('Starting deployment...');
-    // Stage all data changes
-    exec('git add . && git commit -m "Admin updates" && npm run deploy', (error, stdout, stderr) => {
-        if (error) {
-            console.error(`exec error: ${error}`);
-            return res.status(500).json({ error: 'Deploy failed' });
+
+    // First, check if there are any changes to commit
+    exec('git status --porcelain', (statusError, stdout) => {
+        if (statusError) {
+            console.error(`Status check error: ${statusError}`);
+            return res.status(500).json({ error: 'Failed to check git status' });
         }
-        console.log(`stdout: ${stdout}`);
-        res.json({ success: true, log: stdout });
+
+        const hasChanges = stdout.trim().length > 0;
+
+        let command = 'npm run deploy';
+        if (hasChanges) {
+            console.log('Changes detected, committing...');
+            command = 'git add . && git commit -m "Admin updates" && npm run deploy';
+        } else {
+            console.log('No changes to commit, proceeding with deployment...');
+        }
+
+        exec(command, (error, stdout, stderr) => {
+            if (error) {
+                console.error(`Deployment error: ${error}`);
+                console.error(`stderr: ${stderr}`);
+                return res.status(500).json({
+                    error: 'Deploy failed',
+                    details: stderr || error.message,
+                    log: stdout
+                });
+            }
+            console.log(`stdout: ${stdout}`);
+            res.json({ success: true, log: stdout });
+        });
     });
 });
 
