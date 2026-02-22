@@ -19,7 +19,7 @@ const AdminDashboard: React.FC<Props> = ({ onNavigate }) => {
     const [storyImages, setStoryImages] = useState<string[]>([]);
     const [isSaving, setIsSaving] = useState(false);
     const [message, setMessage] = useState('');
-    const [isServerOnline, setIsServerOnline] = useState(false);
+    const [githubToken, setGithubToken] = useState<string>(localStorage.getItem('gh_token') || '');
     const [deployLog, setDeployLog] = useState('');
 
     // Story Creation State
@@ -43,30 +43,27 @@ const AdminDashboard: React.FC<Props> = ({ onNavigate }) => {
             try {
                 const res = await fetch(url);
                 if (!res.ok) throw new Error(`HTTP ${res.status}`);
-                const data = await res.json();
-                setConfig(data);
-                return true;
+                return await res.json();
             } catch (e) {
                 console.warn(`Failed to fetch from ${url}:`, e);
-                return false;
+                return null;
             }
         };
 
         const loadConfig = async () => {
             const baseUrl = import.meta.env.BASE_URL || '/';
-            // Try relative first (should work on dev and most prod setups)
-            if (await tryFetch('data/site-config.json')) return;
-            // Try absolute with base URL if relative fails
-            if (baseUrl !== '/' && await tryFetch(`${baseUrl}data/site-config.json`)) return;
-
-            setMessage('Error: Failed to load site-config.json');
+            let data = await tryFetch('data/site-config.json');
+            if (!data && baseUrl !== '/') {
+                data = await tryFetch(`${baseUrl}data/site-config.json`);
+            }
+            if (data) setConfig(data);
+            else setMessage('Error: Failed to load site-config.json');
         };
 
         setStories(getAllStories());
         loadDescriptions().then(setDescriptions);
         loadConfig();
 
-        // Index images for the picker once on mount
         const indexImages = () => {
             const images: { url: string; story: string }[] = [];
             const storyImagesGlob = import.meta.glob('/public/images/stories/*/*.{jpg,jpeg,png,webp}', { eager: true, query: '?url', import: 'default' });
@@ -81,24 +78,67 @@ const AdminDashboard: React.FC<Props> = ({ onNavigate }) => {
             setAllImages(images);
         };
         indexImages();
-
-        // Check if admin server is online
-        const checkServer = async () => {
-            try {
-                const res = await fetch('http://localhost:3001/api/save-config', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({}) // Empty probe
-                });
-                setIsServerOnline(true);
-            } catch (e) {
-                setIsServerOnline(false);
-            }
-        };
-        checkServer();
-        const interval = setInterval(checkServer, 5000);
-        return () => clearInterval(interval);
     }, [onNavigate]);
+
+    // GitHub API Helpers
+    const REPO_OWNER = 'manojkakitha';
+    const REPO_NAME = 'Vardhan-Vishnu';
+
+    const githubRequest = async (path: string, method: string = 'GET', body: any = null) => {
+        const url = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${path}`;
+        const headers: Record<string, string> = {
+            'Authorization': `token ${githubToken}`,
+            'Accept': 'application/vnd.github.v3+json',
+        };
+
+        if (body) {
+            headers['Content-Type'] = 'application/json';
+        }
+
+        const res = await fetch(url, {
+            method,
+            headers,
+            body: body ? JSON.stringify(body) : null
+        });
+
+        if (!res.ok) {
+            const errData = await res.json();
+            throw new Error(errData.message || `GitHub API error: ${res.status}`);
+        }
+
+        return res.json();
+    };
+
+    const updateFileOnGithub = async (filePath: string, content: any, commitMessage: string) => {
+        let sha: string | undefined;
+        try {
+            const fileInfo = await githubRequest(filePath);
+            sha = fileInfo.sha;
+        } catch (e) {
+            console.log("File might be new, proceeding without SHA");
+        }
+
+        const stringified = typeof content === 'string' ? content : JSON.stringify(content, null, 4);
+        const encodedContent = btoa(unescape(encodeURIComponent(stringified)));
+
+        return githubRequest(filePath, 'PUT', {
+            message: commitMessage,
+            content: encodedContent,
+            sha
+        });
+    };
+
+    const moveFileOnGithub = async (sourcePath: string, targetPath: string, commitMessage: string) => {
+        const sourceFile = await githubRequest(sourcePath);
+        await githubRequest(targetPath, 'PUT', {
+            message: commitMessage,
+            content: sourceFile.content,
+        });
+        return githubRequest(sourcePath, 'DELETE', {
+            message: `Cleanup after move: ${commitMessage}`,
+            sha: sourceFile.sha
+        });
+    };
 
     useEffect(() => {
         if (selectedStory && activeTab === 'stories') {
@@ -118,43 +158,50 @@ const AdminDashboard: React.FC<Props> = ({ onNavigate }) => {
     }, [selectedStory, stories, activeTab]);
 
     const handleSave = async (data: any, endpoint: string) => {
+        if (!githubToken) {
+            setMessage('Error: GitHub Token required for saving.');
+            return;
+        }
         setIsSaving(true);
-        setMessage('');
+        setMessage('Saving to GitHub...');
         try {
-            const response = await fetch(`http://localhost:3001/api/${endpoint}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
-            });
-            if (response.ok) {
-                setMessage('Changes saved successfully!');
-            } else {
-                setMessage('Failed to save changes.');
-            }
-        } catch (error) {
+            const fileName = endpoint === 'save-config' ? 'public/data/site-config.json' : 'public/data/descriptions.json';
+            await updateFileOnGithub(fileName, data, `Admin Update: ${endpoint}`);
+            setMessage('Changes saved to GitHub! Deployment started.');
+        } catch (error: any) {
             console.error(error);
-            setMessage('Server connection error.');
+            setMessage(`GitHub Error: ${error.message}`);
         } finally {
             setIsSaving(false);
         }
     };
 
     const handleCreateStory = async () => {
+        if (!githubToken) {
+            setMessage('Error: GitHub Token required.');
+            return;
+        }
         setIsSaving(true);
+        setMessage('Creating story on GitHub...');
         try {
-            const res = await fetch('http://localhost:3001/api/create-story', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(newStory)
-            });
-            if (res.ok) {
-                setMessage('Story created! Refreshing...');
-                window.location.reload();
-            } else {
-                setMessage('Error creating story.');
-            }
-        } catch (err) {
-            setMessage('Failed to connect to server.');
+            const metadata = {
+                id: `story-${Date.now()}`,
+                client: newStory.client,
+                location: newStory.location,
+                date: newStory.date,
+                description: `A new cinematic story from ${newStory.location}`,
+                slug: newStory.slug,
+                thumbnailUrl: `images/stories/${newStory.slug}/thumbnail.webp`,
+                heroUrl: `images/stories/${newStory.slug}/hero.webp`
+            };
+
+            const metadataPath = `public/images/stories/${newStory.slug}/metadata.json`;
+            await updateFileOnGithub(metadataPath, metadata, `Admin: Create story ${newStory.slug}`);
+
+            setMessage('Story created! It will appear after deployment.');
+            setShowCreateForm(false);
+        } catch (err: any) {
+            setMessage(`Error: ${err.message}`);
         } finally {
             setIsSaving(false);
         }
@@ -171,7 +218,7 @@ const AdminDashboard: React.FC<Props> = ({ onNavigate }) => {
 
     const handleOpenImagePicker = (type: 'home' | 'stills', index: number) => {
         setPickerTarget({ type, index });
-        setDisplayLimit(48); // Reset limit when opening
+        setDisplayLimit(48);
         setShowImagePicker(true);
     };
 
@@ -215,54 +262,44 @@ const AdminDashboard: React.FC<Props> = ({ onNavigate }) => {
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-12">
                     <div>
                         <h1 className="text-4xl font-black tracking-tighter uppercase">Studio Admin</h1>
-                        <p className="text-[10px] font-bold tracking-[0.3em] text-muted uppercase mt-2">v2.0 • Local Systems</p>
+                        <p className="text-[10px] font-bold tracking-[0.3em] text-muted uppercase mt-2">v2.0 • Git Active</p>
                     </div>
                     <div className="flex items-center gap-4">
+                        <div className="flex flex-col items-end mr-4">
+                            <label className="text-[8px] font-bold uppercase text-muted mb-1">GitHub Token (PAT)</label>
+                            <input
+                                type="password"
+                                value={githubToken}
+                                onChange={(e) => {
+                                    setGithubToken(e.target.value);
+                                    localStorage.setItem('gh_token', e.target.value);
+                                }}
+                                className="p-2 border border-stone-200 text-[10px] w-40 bg-white"
+                                placeholder="Paste token here..."
+                            />
+                        </div>
                         {message && <span className={`text-[10px] font-bold uppercase tracking-widest ${message.includes('Error') || message.includes('Failed') ? 'text-red-500' : 'text-green-600'}`}>{message}</span>}
-                        <button
-                            onClick={async () => {
-                                setIsSaving(true);
-                                setMessage('Deploying to production...');
-                                setDeployLog('');
-                                try {
-                                    const res = await fetch('http://localhost:3001/api/deploy', { method: 'POST' });
-                                    const data = await res.json();
-                                    if (res.ok) {
-                                        setMessage('Deployed successfully!');
-                                    } else {
-                                        setMessage(`Deploy failed: ${data.error || 'Unknown error'}`);
-                                        if (data.details) setDeployLog(data.details);
-                                    }
-                                } catch (err) {
-                                    setMessage('Deploy server error: Connection refused.');
-                                } finally {
-                                    setIsSaving(false);
-                                }
-                            }}
-                            disabled={isSaving || !isServerOnline}
-                            className={`px-6 py-3 text-white text-[10px] font-bold uppercase tracking-widest disabled:opacity-50 shadow-lifted transition-all ${!isServerOnline ? 'bg-stone-400' : 'bg-primary hover:bg-red-700'}`}
-                        >
-                            {!isServerOnline ? 'Server Offline' : 'Deploy to Live'}
-                        </button>
-                        <button onClick={() => onNavigate('home')} className="px-6 py-3 border border-charcoal text-[10px] font-bold uppercase tracking-widest hover:bg-charcoal hover:text-white transition-all">Exit</button>
+                        <button onClick={() => onNavigate('home')} className="px-6 py-3 border border-charcoal text-[10px] font-bold uppercase tracking-widest hover:bg-charcoal hover:text-white transition-all">Exit Dashboard</button>
                     </div>
                 </div>
 
-                {/* Status Bar */}
-                {!isServerOnline && (
-                    <div className="mb-8 p-4 bg-red-50 border border-red-100 flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                            <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div>
-                            <p className="text-[10px] font-bold uppercase tracking-widest text-red-600">Local Admin Server Disconnected</p>
+                {!githubToken && (
+                    <div className="mb-8 p-6 bg-yellow-50 border border-yellow-100 flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                            <div className="w-10 h-10 rounded-full bg-yellow-400/20 text-yellow-600 flex items-center justify-center text-xl font-bold">!</div>
+                            <div>
+                                <p className="text-[10px] font-bold uppercase tracking-widest text-yellow-700">GitHub Authentication Required</p>
+                                <p className="text-[9px] font-medium text-yellow-600/80 mt-1 text-pretty max-w-sm">Please provide a GitHub Personal Access Token in the settings above to enable saving changes and automatic deployment.</p>
+                            </div>
                         </div>
-                        <p className="text-[9px] font-medium text-red-500/80">Running `npm run admin` in your terminal is required for saving changes and deployment.</p>
+                        <a href="https://github.com/settings/tokens?type=beta" target="_blank" rel="noreferrer" className="px-4 py-2 bg-yellow-600 text-white text-[9px] font-bold uppercase hover:bg-yellow-700 transition-all">Generate Token</a>
                     </div>
                 )}
 
                 {deployLog && (
                     <div className="mb-8 p-4 bg-stone-900 border border-stone-800">
                         <div className="flex justify-between items-center mb-2">
-                            <p className="text-[8px] font-mono text-stone-500 uppercase">Deployment Error Details</p>
+                            <p className="text-[8px] font-mono text-stone-500 uppercase">Error Details</p>
                             <button onClick={() => setDeployLog('')} className="text-[8px] text-white hover:text-primary uppercase font-bold">Close</button>
                         </div>
                         <pre className="text-[9px] font-mono text-red-400 whitespace-pre-wrap">{deployLog}</pre>
@@ -284,7 +321,6 @@ const AdminDashboard: React.FC<Props> = ({ onNavigate }) => {
 
                 {/* Content */}
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
-                    {/* Sidebar Area */}
                     <div className="md:col-span-1 space-y-8">
                         {activeTab === 'stories' && (
                             <>
@@ -310,360 +346,262 @@ const AdminDashboard: React.FC<Props> = ({ onNavigate }) => {
                         )}
                         {activeTab === 'home-stills' && (
                             <div className="space-y-4">
-                                <div className="p-6 bg-white border border-stone-200">
-                                    <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted mb-4">Quick Stats</h3>
-                                    {config ? (
-                                        <>
-                                            <p className="text-2xl font-black">{config.home.items.length} Home Items</p>
-                                            <p className="text-2xl font-black mt-2">{config.stills.items.length} Still Items</p>
-                                        </>
-                                    ) : (
-                                        <p className="text-xs text-muted animate-pulse">Loading data...</p>
-                                    )}
+                                <p className="text-[10px] font-bold uppercase tracking-widest text-muted border-b pb-2">Section Editor</p>
+                                <div className="bg-white p-4 border border-stone-200">
+                                    <p className="text-[10px] font-bold uppercase">Quick Tips</p>
+                                    <p className="text-[9px] mt-2 text-muted leading-relaxed">Changes made here update the homepage layout. Use the 'Save Changes' button below to sync with GitHub.</p>
                                 </div>
-                                <div className="p-4 bg-stone-50 border border-stone-200 border-dashed">
-                                    <h3 className="text-[8px] font-bold uppercase tracking-widest text-muted mb-2">System Diagnostics</h3>
-                                    <p className="text-[9px] font-mono text-muted overflow-hidden text-ellipsis">Base: {import.meta.env.BASE_URL || '/'}</p>
-                                    <p className="text-[9px] font-mono text-muted">Config: {config ? 'Loaded' : 'Missing'}</p>
-                                </div>
+                                <button
+                                    onClick={() => handleSave(config, 'save-config')}
+                                    disabled={isSaving || !githubToken}
+                                    className="w-full py-4 bg-charcoal text-white text-[10px] font-bold uppercase tracking-[0.2em] hover:bg-stone-800 disabled:opacity-50 shadow-lifted transition-all"
+                                >
+                                    Save Homepage Layout
+                                </button>
+                            </div>
+                        )}
+                        {activeTab === 'info' && (
+                            <div className="space-y-4">
+                                <p className="text-[10px] font-bold uppercase tracking-widest text-muted border-b pb-2">Information Editor</p>
+                                <button
+                                    onClick={() => handleSave(descriptions, 'save-descriptions')}
+                                    disabled={isSaving || !githubToken}
+                                    className="w-full py-4 bg-charcoal text-white text-[10px] font-bold uppercase tracking-[0.2em] hover:bg-stone-800 disabled:opacity-50 shadow-lifted transition-all"
+                                >
+                                    Save All Descriptions
+                                </button>
                             </div>
                         )}
                     </div>
 
-                    {/* Main Editing Area */}
                     <div className="md:col-span-3">
-                        {activeTab === 'stories' && selectedStory && (
-                            <div className="space-y-12">
-                                <div className="flex justify-between items-end border-b border-charcoal/10 pb-4">
-                                    <h2 className="text-2xl font-black uppercase tracking-tight">Managing: {stories.find(s => s.id === selectedStory)?.client}</h2>
-                                    <button
-                                        onClick={() => handleSave(descriptions, 'save-descriptions')}
-                                        disabled={isSaving}
-                                        className="px-8 py-3 bg-charcoal text-white text-[10px] font-bold uppercase tracking-widest hover:bg-stone-800 disabled:opacity-50"
-                                    >
-                                        Save All Changes
-                                    </button>
-                                </div>
-
-                                <div className="grid grid-cols-1 gap-8">
-                                    {storyImages.map((img, idx) => (
-                                        <div
-                                            key={img}
-                                            draggable
-                                            onDragStart={(e) => e.dataTransfer.setData('text/plain', idx.toString())}
-                                            onDragOver={(e) => e.preventDefault()}
-                                            onDrop={(e) => {
-                                                const fromIndex = parseInt(e.dataTransfer.getData('text/plain'));
-                                                const toIndex = idx;
-                                                const newImages = [...storyImages];
-                                                const [moved] = newImages.splice(fromIndex, 1);
-                                                newImages.splice(toIndex, 0, moved);
-                                                setStoryImages(newImages);
-                                            }}
-                                            className="bg-white p-6 border border-stone-200 flex gap-6 group hover:border-primary/30 transition-all shadow-sm cursor-move active:scale-[0.98]"
-                                        >
-                                            <div className="w-40 h-40 bg-limestone overflow-hidden border border-stone-100 relative shrink-0">
-                                                <img src={img} className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all" alt="Story" />
-                                                <span className="absolute bottom-2 right-2 bg-black/80 text-white text-[8px] px-2 py-0.5 rounded-full font-bold">#{idx + 1}</span>
+                        {activeTab === 'stories' && (
+                            <div className="space-y-8">
+                                {selectedStory ? (
+                                    <>
+                                        <div className="flex justify-between items-center bg-white p-6 border border-stone-200">
+                                            <div>
+                                                <h3 className="text-xl font-black uppercase tracking-tight">{stories.find(s => s.id === selectedStory)?.client}</h3>
+                                                <p className="text-[10px] font-bold text-muted uppercase tracking-widest">{stories.find(s => s.id === selectedStory)?.slug}</p>
                                             </div>
-                                            <div className="flex-1 space-y-4">
-                                                <div className="flex justify-between items-start">
-                                                    <div className="space-y-1 flex-1 mr-4">
-                                                        <label className="text-[8px] font-bold uppercase tracking-widest text-muted">Description Text</label>
-                                                        <textarea
-                                                            value={descriptions[img]?.text || ''}
-                                                            onChange={(e) => setDescriptions(prev => ({ ...prev, [img]: { ...prev[img], text: e.target.value } }))}
-                                                            className="w-full p-3 border border-stone-200 text-xs font-medium focus:ring-1 focus:ring-primary outline-none min-h-[80px]"
-                                                            placeholder="Enter caption..."
-                                                        />
+                                            <button
+                                                onClick={() => handleSave(descriptions, 'save-descriptions')}
+                                                disabled={isSaving || !githubToken}
+                                                className="px-8 py-3 bg-charcoal text-white text-[10px] font-bold uppercase tracking-widest hover:bg-stone-800 disabled:opacity-50"
+                                            >
+                                                Save Settings
+                                            </button>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 gap-4">
+                                            {storyImages.map((img, idx) => (
+                                                <div
+                                                    key={img}
+                                                    className="bg-white p-6 border border-stone-200 flex gap-6 group hover:border-primary/30 transition-all shadow-sm"
+                                                >
+                                                    <div className="w-40 h-40 bg-limestone overflow-hidden border border-stone-100 relative shrink-0">
+                                                        <img src={img} className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all" alt="Story" />
+                                                        <span className="absolute bottom-2 right-2 bg-black/80 text-white text-[8px] px-2 py-0.5 rounded-full font-bold">#{idx + 1}</span>
                                                     </div>
-                                                    <div className="space-y-4 shrink-0">
-                                                        <div className="flex flex-col gap-2">
-                                                            <button
-                                                                onClick={async () => {
-                                                                    const story = stories.find(s => s.id === selectedStory);
-                                                                    if (!story) return;
-                                                                    try {
-                                                                        const res = await fetch('http://localhost:3001/api/toggle-carousel', {
-                                                                            method: 'POST',
-                                                                            headers: { 'Content-Type': 'application/json' },
-                                                                            body: JSON.stringify({
-                                                                                slug: story.slug,
-                                                                                imagePath: img.replace(import.meta.env.BASE_URL, '/public/'),
-                                                                                isCarousel: !img.includes('/carousel/')
-                                                                            })
-                                                                        });
-                                                                        if (res.ok) {
-                                                                            setMessage('Image moved! Reloading...');
-                                                                            setTimeout(() => window.location.reload(), 1000);
-                                                                        }
-                                                                    } catch (err) {
-                                                                        setMessage('Failed to toggle carousel.');
-                                                                    }
-                                                                }}
-                                                                className={`px-4 py-2 text-[8px] font-bold uppercase tracking-widest border border-charcoal transition-all ${img.includes('/carousel/') ? 'bg-charcoal text-white' : 'hover:bg-charcoal hover:text-white'}`}
-                                                            >
-                                                                {img.includes('/carousel/') ? 'In Carousel' : 'Add to Carousel'}
-                                                            </button>
+                                                    <div className="flex-1 space-y-4">
+                                                        <div className="flex justify-between items-start">
+                                                            <div className="space-y-1 flex-1 mr-4">
+                                                                <label className="text-[8px] font-bold uppercase tracking-widest text-muted">Description Text</label>
+                                                                <textarea
+                                                                    value={descriptions[img]?.text || ''}
+                                                                    onChange={(e) => setDescriptions(prev => ({ ...prev, [img]: { ...prev[img], text: e.target.value } }))}
+                                                                    className="w-full p-3 border border-stone-200 text-xs font-medium focus:ring-1 focus:ring-primary outline-none min-h-[80px]"
+                                                                    placeholder="Enter caption..."
+                                                                />
+                                                            </div>
+                                                            <div className="space-y-4 shrink-0">
+                                                                <div className="flex flex-col gap-2">
+                                                                    <button
+                                                                        onClick={async () => {
+                                                                            const story = stories.find(s => s.id === selectedStory);
+                                                                            if (!story || !githubToken) return;
+                                                                            setIsSaving(true);
+                                                                            setMessage('Moving file on GitHub...');
+                                                                            try {
+                                                                                const fileName = img.split('/').pop() || '';
+                                                                                const isCurrentlyCarousel = img.includes('/carousel/');
+                                                                                const sourcePath = `public/images/stories/${story.slug}/${isCurrentlyCarousel ? 'carousel/' : ''}${fileName}`;
+                                                                                const targetPath = `public/images/stories/${story.slug}/${isCurrentlyCarousel ? '' : 'carousel/'}${fileName}`;
+
+                                                                                await moveFileOnGithub(sourcePath, targetPath, `Admin: Toggle carousel for ${fileName}`);
+                                                                                setMessage('Image moved! Deployment started.');
+                                                                                setTimeout(() => window.location.reload(), 2000);
+                                                                            } catch (err: any) {
+                                                                                setMessage(`Failed to move: ${err.message}`);
+                                                                            } finally {
+                                                                                setIsSaving(false);
+                                                                            }
+                                                                        }}
+                                                                        className={`px-4 py-2 text-[8px] font-bold uppercase tracking-widest border border-charcoal transition-all ${img.includes('/carousel/') ? 'bg-charcoal text-white' : 'hover:bg-charcoal hover:text-white'}`}
+                                                                    >
+                                                                        {img.includes('/carousel/') ? 'In Carousel' : 'Add to Carousel'}
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div className="space-y-1">
+                                                            <label className="text-[8px] font-bold uppercase tracking-widest text-muted">Instagram Link (Optional)</label>
+                                                            <input
+                                                                type="text"
+                                                                value={descriptions[img]?.instagramUrl || ''}
+                                                                onChange={(e) => setDescriptions(prev => ({ ...prev, [img]: { ...prev[img], instagramUrl: e.target.value } }))}
+                                                                className="w-full p-2 border border-stone-200 text-xs font-mono focus:ring-1 focus:ring-primary outline-none"
+                                                                placeholder="https://instagram.com/p/..."
+                                                            />
                                                         </div>
                                                     </div>
                                                 </div>
-                                                <div className="space-y-1">
-                                                    <label className="text-[8px] font-bold uppercase tracking-widest text-muted">Instagram Link (Optional)</label>
-                                                    <input
-                                                        type="text"
-                                                        value={descriptions[img]?.instagramUrl || ''}
-                                                        onChange={(e) => setDescriptions(prev => ({ ...prev, [img]: { ...prev[img], instagramUrl: e.target.value } }))}
-                                                        className="w-full p-2 border border-stone-200 text-xs font-mono focus:ring-1 focus:ring-primary outline-none"
-                                                        placeholder="https://instagram.com/p/..."
-                                                    />
-                                                </div>
-                                            </div>
+                                            ))}
                                         </div>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-
-                        {activeTab === 'home-stills' && !config && (
-                            <div className="flex flex-col items-center justify-center py-32 border-2 border-dashed border-stone-100 rounded-lg">
-                                <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mb-6"></div>
-                                <h2 className="text-lg font-bold uppercase tracking-widest text-charcoal">Loading Selections...</h2>
-                                <p className="text-xs text-muted mt-2">Connecting to data warehouse</p>
+                                    </>
+                                ) : (
+                                    <div className="bg-white border-2 border-dashed border-stone-200 rounded-lg p-20 flex flex-col items-center justify-center text-center">
+                                        <div className="w-16 h-16 bg-stone-50 rounded-full flex items-center justify-center mb-6">
+                                            <span className="text-2xl grayscale">📂</span>
+                                        </div>
+                                        <h3 className="text-sm font-black uppercase tracking-widest text-muted">No Story Selected</h3>
+                                        <p className="text-xs text-stone-400 mt-2">Pick a story from the list to begin editing its visual flow and metadata.</p>
+                                    </div>
+                                )}
                             </div>
                         )}
 
                         {activeTab === 'home-stills' && config && (
                             <div className="space-y-12">
-                                <div className="flex justify-between items-end border-b border-charcoal/10 pb-4">
-                                    <h2 className="text-2xl font-black uppercase tracking-tight">Main Site Content</h2>
-                                    <button onClick={() => handleSave(config, 'save-config')} className="px-8 py-3 bg-primary text-white text-[10px] font-bold uppercase tracking-widest hover:bg-red-700 transition-all shadow-lifted">Save Config</button>
+                                <div className="space-y-6">
+                                    <h3 className="text-2xl font-black uppercase tracking-tight border-b pb-4">Home Carousel</h3>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                        {config.home.items.map((item, i) => (
+                                            <div key={i} className="group relative aspect-[4/5] bg-stone-100 border border-stone-200 overflow-hidden shadow-sm">
+                                                <img src={resolveUrl(item.imageUrl)} className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all" alt="" />
+                                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                                    <button onClick={() => handleOpenImagePicker('home', i)} className="px-6 py-2 bg-white text-charcoal text-[10px] font-bold uppercase tracking-widest scale-90 group-hover:scale-100 transition-transform">Replace</button>
+                                                </div>
+                                                <div className="absolute top-2 left-2 bg-charcoal/80 text-white text-[8px] font-bold px-2 py-0.5">#{i + 1}</div>
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
-
-                                <div className="space-y-16">
-                                    {/* Home Page Editor */}
-                                    <section className="space-y-8">
-                                        <div className="flex items-center gap-4">
-                                            <span className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-black">1</span>
-                                            <h3 className="text-sm font-bold uppercase tracking-widest">Home Page (Selections)</h3>
-                                        </div>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6 bg-white border border-stone-200 shadow-sm">
-                                            <div className="space-y-2">
-                                                <label className="text-[10px] font-bold uppercase text-muted">Hero Title</label>
-                                                <input type="text" value={config.home.title} onChange={(e) => setConfig({ ...config, home: { ...config.home, title: e.target.value } })} className="w-full p-4 bg-limestone border-none text-sm font-bold" />
+                                <div className="space-y-6">
+                                    <h3 className="text-2xl font-black uppercase tracking-tight border-b pb-4">Stills Grid</h3>
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                        {config.stills.items.map((item, i) => (
+                                            <div key={i} className="group relative aspect-square bg-stone-100 border border-stone-200 overflow-hidden shadow-sm">
+                                                <img src={resolveUrl(item.imageUrl)} className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all" alt="" />
+                                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                                    <button onClick={() => handleOpenImagePicker('stills', i)} className="px-4 py-2 bg-white text-charcoal text-[8px] font-bold uppercase tracking-widest scale-90 group-hover:scale-100 transition-transform">Change</button>
+                                                </div>
                                             </div>
-                                            <div className="space-y-2">
-                                                <label className="text-[10px] font-bold uppercase text-muted">Hero Subtitle</label>
-                                                <input type="text" value={config.home.subtitle} onChange={(e) => setConfig({ ...config, home: { ...config.home, subtitle: e.target.value } })} className="w-full p-4 bg-limestone border-none text-sm font-bold" />
-                                            </div>
-                                        </div>
-                                        <div className="space-y-4">
-                                            <label className="text-[10px] font-bold uppercase text-muted tracking-widest">Grid Portfolio Items</label>
-                                            <div className="grid grid-cols-1 gap-4">
-                                                {config.home.items.map((item, i) => (
-                                                    <div key={i} className="bg-white p-6 border border-stone-200 grid grid-cols-1 md:grid-cols-7 gap-6 items-end group">
-                                                        <div className="md:col-span-1">
-                                                            <div className="aspect-[3/4] bg-stone-100 border border-stone-100 overflow-hidden">
-                                                                <img src={resolveUrl(item.imageUrl)} className="w-full h-full object-cover" alt="" onError={(e) => (e.currentTarget.src = 'https://placehold.co/300x400?text=Missing')} />
-                                                            </div>
-                                                        </div>
-                                                        <div className="md:col-span-2 space-y-2">
-                                                            <label className="text-[8px] font-bold uppercase text-muted">Project Title</label>
-                                                            <input value={item.title} onChange={(e) => {
-                                                                const items = [...config.home.items];
-                                                                items[i] = { ...items[i], title: e.target.value };
-                                                                setConfig({ ...config, home: { ...config.home, items } });
-                                                            }} className="w-full p-2 border-stone-100 border text-xs font-bold" />
-                                                        </div>
-                                                        <div className="md:col-span-1 space-y-2">
-                                                            <label className="text-[8px] font-bold uppercase text-muted">Category</label>
-                                                            <input value={item.category} onChange={(e) => {
-                                                                const items = [...config.home.items];
-                                                                items[i] = { ...items[i], category: e.target.value };
-                                                                setConfig({ ...config, home: { ...config.home, items } });
-                                                            }} className="w-full p-2 border-stone-100 border text-xs" />
-                                                        </div>
-                                                        <div className="md:col-span-2 space-y-2">
-                                                            <label className="text-[8px] font-bold uppercase text-muted">Image Path</label>
-                                                            <div className="flex gap-2">
-                                                                <input value={item.imageUrl} onChange={(e) => {
-                                                                    const items = [...config.home.items];
-                                                                    items[i] = { ...items[i], imageUrl: e.target.value };
-                                                                    setConfig({ ...config, home: { ...config.home, items } });
-                                                                }} className="flex-1 p-2 border-stone-100 border text-xs font-mono" />
-                                                                <button
-                                                                    onClick={() => handleOpenImagePicker('home', i)}
-                                                                    className="px-3 bg-stone-100 border border-stone-200 text-[8px] font-black uppercase hover:bg-stone-200"
-                                                                >
-                                                                    Pick
-                                                                </button>
-                                                            </div>
-                                                        </div>
-                                                        <div className="md:col-span-1">
-                                                            <button onClick={() => {
-                                                                const items = config.home.items.filter((_, idx) => idx !== i);
-                                                                setConfig({ ...config, home: { ...config.home, items } });
-                                                            }} className="w-full py-2 text-red-500 text-[10px] font-bold uppercase hover:bg-red-50">Delete</button>
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                                <button onClick={() => {
-                                                    const newItem = { id: Date.now().toString(), title: 'New Project', category: 'Portrait', imageUrl: 'images/placeholder.webp', date: '2024' };
-                                                    setConfig({ ...config, home: { ...config.home, items: [...config.home.items, newItem] } });
-                                                }} className="w-full py-4 border-2 border-dashed border-stone-200 text-[10px] font-bold uppercase tracking-widest text-muted hover:border-primary hover:text-primary hover:bg-primary/5 transition-all">+ Add Selection</button>
-                                            </div>
-                                        </div>
-                                    </section>
-
-                                    {/* Stills Page Editor */}
-                                    <section className="space-y-8">
-                                        <div className="flex items-center gap-4">
-                                            <span className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-black">2</span>
-                                            <h3 className="text-sm font-bold uppercase tracking-widest">Stills Collection</h3>
-                                        </div>
-                                        <div className="space-y-6 p-6 bg-white border border-stone-200 shadow-sm">
-                                            <div className="space-y-2">
-                                                <label className="text-[10px] font-bold uppercase text-muted">Page Headline</label>
-                                                <input type="text" value={config.stills.title} onChange={(e) => setConfig({ ...config, stills: { ...config.stills, title: e.target.value } })} className="w-full p-4 bg-limestone border-none text-sm font-bold" />
-                                            </div>
-                                            <div className="space-y-2">
-                                                <label className="text-[10px] font-bold uppercase text-muted">Narrative Description</label>
-                                                <textarea value={config.stills.description} onChange={(e) => setConfig({ ...config, stills: { ...config.stills, description: e.target.value } })} className="w-full p-4 bg-limestone border-none text-sm min-h-[100px]" />
-                                            </div>
-                                        </div>
-                                        <div className="space-y-4">
-                                            <label className="text-[10px] font-bold uppercase text-muted tracking-widest">Stills Grid</label>
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                {config.stills.items.map((item, i) => (
-                                                    <div key={i} className="bg-white p-4 border border-stone-200 flex gap-4">
-                                                        <div className="w-20 aspect-square bg-stone-100 overflow-hidden shrink-0">
-                                                            <img src={resolveUrl(item.imageUrl)} className="w-full h-full object-cover" alt="" onError={(e) => (e.currentTarget.src = 'https://placehold.co/100x100?text=Err')} />
-                                                        </div>
-                                                        <div className="flex-1 space-y-3">
-                                                            <div className="flex justify-between">
-                                                                <input value={item.title} onChange={(e) => {
-                                                                    const items = [...config.stills.items];
-                                                                    items[i] = { ...items[i], title: e.target.value };
-                                                                    setConfig({ ...config, stills: { ...config.stills, items } });
-                                                                }} className="p-1 border-b border-stone-100 text-xs font-bold w-full" placeholder="Title" />
-                                                                <button onClick={() => {
-                                                                    const items = config.stills.items.filter((_, idx) => idx !== i);
-                                                                    setConfig({ ...config, stills: { ...config.stills, items } });
-                                                                }} className="text-red-500 hover:text-red-700 ml-2">×</button>
-                                                            </div>
-                                                            <div className="flex gap-2">
-                                                                <input value={item.imageUrl} onChange={(e) => {
-                                                                    const items = [...config.stills.items];
-                                                                    items[i] = { ...items[i], imageUrl: e.target.value };
-                                                                    setConfig({ ...config, stills: { ...config.stills, items } });
-                                                                }} className="flex-1 p-1 text-[10px] font-mono text-muted" placeholder="Path..." />
-                                                                <button
-                                                                    onClick={() => handleOpenImagePicker('stills', i)}
-                                                                    className="px-2 bg-stone-100 border border-stone-200 text-[8px] font-black uppercase hover:bg-stone-200"
-                                                                >
-                                                                    Pick
-                                                                </button>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                                <button onClick={() => {
-                                                    const newItem = { id: 's' + Date.now(), title: 'New Still', category: 'Portraits', imageUrl: 'images/placeholder.webp', subtitle: '00' };
-                                                    setConfig({ ...config, stills: { ...config.stills, items: [...config.stills.items, newItem] } });
-                                                }} className="flex items-center justify-center border-2 border-dashed border-stone-200 text-[10px] font-bold uppercase hover:border-primary hover:text-primary transition-all p-8">+ Add Still</button>
-                                            </div>
-                                        </div>
-                                    </section>
+                                        ))}
+                                    </div>
                                 </div>
                             </div>
                         )}
 
-                        {activeTab === 'info' && config && (
+                        {activeTab === 'info' && (
                             <div className="space-y-12">
-                                <div className="flex justify-between items-end border-b border-charcoal/10 pb-4">
-                                    <h2 className="text-2xl font-black uppercase tracking-tight">Identity & Contacts</h2>
-                                    <button onClick={() => handleSave(config, 'save-config')} className="px-8 py-3 bg-primary text-white text-[10px] font-bold uppercase tracking-widest hover:bg-red-700 transition-all shadow-lifted">Save Info</button>
-                                </div>
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-                                    <div className="space-y-8">
-                                        <div className="space-y-2">
-                                            <label className="text-[10px] font-bold uppercase tracking-widest text-muted">Displayed name</label>
-                                            <input type="text" value={config.info.name} onChange={(e) => setConfig({ ...config, info: { ...config.info, name: e.target.value } })} className="w-full p-4 bg-white border border-stone-200 text-sm font-bold" />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <label className="text-[10px] font-bold uppercase tracking-widest text-muted">Role/Title</label>
-                                            <input type="text" value={config.info.role} onChange={(e) => setConfig({ ...config, info: { ...config.info, role: e.target.value } })} className="w-full p-4 bg-white border border-stone-200 text-sm font-bold" />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <label className="text-[10px] font-bold uppercase tracking-widest text-muted">Primary Quote</label>
-                                            <textarea value={config.info.quote} onChange={(e) => setConfig({ ...config, info: { ...config.info, quote: e.target.value } })} className="w-full p-4 bg-white border border-stone-200 text-sm italic font-serif min-h-[120px]" />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <label className="text-[10px] font-bold uppercase tracking-widest text-muted">Biography Text</label>
-                                            <textarea value={config.info.bio} onChange={(e) => setConfig({ ...config, info: { ...config.info, bio: e.target.value } })} className="w-full p-4 bg-white border border-stone-200 text-sm leading-relaxed min-h-[150px]" />
+                                <div className="bg-white p-10 border border-stone-200 space-y-8">
+                                    <div className="space-y-2">
+                                        <h3 className="text-2xl font-black uppercase tracking-tight">Main Thoughts</h3>
+                                        <p className="text-[10px] font-bold text-muted uppercase tracking-widest mb-4">Core philosophy items</p>
+                                    </div>
+                                    <div className="space-y-6">
+                                        {descriptions.info_thoughts?.list?.map((thought: Thought, i: number) => (
+                                            <div key={thought.id} className="space-y-3 p-6 bg-limestone/50 border border-stone-100">
+                                                <div className="flex justify-between items-center">
+                                                    <span className="text-[10px] font-bold text-muted uppercase">Thought #{i + 1}</span>
+                                                    <button onClick={() => {
+                                                        const newList = [...descriptions.info_thoughts.list];
+                                                        newList.splice(i, 1);
+                                                        setDescriptions({ ...descriptions, info_thoughts: { ...descriptions.info_thoughts, list: newList } });
+                                                    }} className="text-red-500 text-[10px] font-black uppercase hover:underline">Remove</button>
+                                                </div>
+                                                <div className="space-y-4">
+                                                    <input
+                                                        type="text"
+                                                        value={thought.title}
+                                                        onChange={(e) => {
+                                                            const newList = [...descriptions.info_thoughts.list];
+                                                            newList[i].title = e.target.value;
+                                                            setDescriptions({ ...descriptions, info_thoughts: { ...descriptions.info_thoughts, list: newList } });
+                                                        }}
+                                                        className="w-full p-4 border border-stone-200 text-xs font-bold uppercase tracking-widest outline-none focus:ring-1 focus:ring-primary"
+                                                        placeholder="Title"
+                                                    />
+                                                    <textarea
+                                                        value={thought.text}
+                                                        onChange={(e) => {
+                                                            const newList = [...descriptions.info_thoughts.list];
+                                                            newList[i].text = e.target.value;
+                                                            setDescriptions({ ...descriptions, info_thoughts: { ...descriptions.info_thoughts, list: newList } });
+                                                        }}
+                                                        className="w-full p-4 border border-stone-200 text-xs font-medium outline-none focus:ring-1 focus:ring-primary min-h-[120px]"
+                                                        placeholder="Content"
+                                                    />
+                                                </div>
+                                            </div>
+                                        ))}
+                                        <div className="pt-4 border-t border-stone-100 flex justify-center">
+                                            <button onClick={() => {
+                                                const newList = [...(descriptions.info_thoughts?.list || [])];
+                                                newList.push({ id: `thought-${Date.now()}`, title: 'NEW TOPIC', text: 'Content goes here...' });
+                                                setDescriptions({ ...descriptions, info_thoughts: { ...descriptions.info_thoughts, list: newList } });
+                                            }} className="px-12 py-4 border-2 border-dashed border-stone-200 text-stone-400 text-[10px] font-bold uppercase tracking-[0.2em] hover:border-charcoal hover:text-charcoal transition-all">
+                                                + Add Thought Item
+                                            </button>
                                         </div>
                                     </div>
-                                    <div className="space-y-8">
-                                        <div className="space-y-4">
-                                            <label className="text-[10px] font-bold uppercase tracking-widest text-muted">Contact Matrix</label>
-                                            <div className="grid grid-cols-1 gap-4 bg-stone-50 p-6 border border-stone-200">
-                                                <div className="space-y-1">
-                                                    <label className="text-[8px] font-bold uppercase text-muted">Email</label>
-                                                    <input type="text" value={config.info.contact.email} onChange={(e) => setConfig({ ...config, info: { ...config.info, contact: { ...config.info.contact, email: e.target.value } } })} className="w-full p-2 border text-xs" />
-                                                </div>
-                                                <div className="space-y-1">
-                                                    <label className="text-[8px] font-bold uppercase text-muted">Instagram Handle</label>
-                                                    <input type="text" value={config.info.contact.instagram} onChange={(e) => setConfig({ ...config, info: { ...config.info, contact: { ...config.info.contact, instagram: e.target.value } } })} className="w-full p-2 border text-xs" />
-                                                </div>
-                                                <div className="space-y-1">
-                                                    <label className="text-[8px] font-bold uppercase text-muted">Base Location</label>
-                                                    <input type="text" value={config.info.contact.location} onChange={(e) => setConfig({ ...config, info: { ...config.info, contact: { ...config.info.contact, location: e.target.value } } })} className="w-full p-2 border text-xs" />
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div className="space-y-2">
-                                            <label className="text-[10px] font-bold uppercase tracking-widest text-muted">Creative Thoughts</label>
-                                            <div className="space-y-2 border border-stone-200 p-4 bg-stone-50 h-[300px] overflow-y-auto no-scrollbar">
-                                                {config.info.creative_thoughts.map((t, i) => (
-                                                    <div key={i} className={`flex gap-4 ${t.role === 'admin' ? 'justify-end' : 'justify-start'}`}>
-                                                        {t.role !== 'admin' && <button onClick={() => {
-                                                            const newThoughts = config.info.creative_thoughts.filter((_, idx) => idx !== i);
-                                                            setConfig({ ...config, info: { ...config.info, creative_thoughts: newThoughts } });
-                                                        }} className="text-[8px] text-red-400 self-center">Del</button>}
-                                                        <div className={`max-w-[80%] p-3 text-[10px] font-bold uppercase tracking-tight ${t.role === 'admin' ? 'bg-charcoal text-white' : 'bg-white border'}`}>
-                                                            {t.text}
-                                                        </div>
-                                                        {t.role === 'admin' && <button onClick={() => {
-                                                            const newThoughts = config.info.creative_thoughts.filter((_, idx) => idx !== i);
-                                                            setConfig({ ...config, info: { ...config.info, creative_thoughts: newThoughts } });
-                                                        }} className="text-[8px] text-red-400 self-center">Del</button>}
-                                                    </div>
-                                                ))}
-                                            </div>
-                                            <div className="flex gap-2 mt-1">
-                                                <input
-                                                    type="text"
-                                                    id="newThought"
-                                                    placeholder="Role-playing thought..."
-                                                    className="flex-1 p-4 border border-stone-200 text-xs bg-white border-t-2 border-t-primary"
-                                                />
+                                </div>
+                                <div className="bg-white p-10 border border-stone-200 space-y-8">
+                                    <div className="space-y-2">
+                                        <h3 className="text-2xl font-black uppercase tracking-tight">Stack & Tools</h3>
+                                        <p className="text-[10px] font-bold text-muted uppercase tracking-widest mb-4">Manage listed expertise</p>
+                                    </div>
+                                    <div className="flex flex-wrap gap-2">
+                                        {descriptions.info_stack?.tags?.map((tag: string, i: number) => (
+                                            <div key={i} className="px-4 py-2 bg-limestone text-[10px] font-bold uppercase tracking-widest flex items-center gap-2 border border-stone-100">
+                                                {tag}
                                                 <button onClick={() => {
-                                                    const input = document.getElementById('newThought') as HTMLInputElement;
-                                                    if (input.value) {
-                                                        const newThoughts: Thought[] = [...config.info.creative_thoughts, { role: 'user', text: input.value }];
-                                                        setConfig({ ...config, info: { ...config.info, creative_thoughts: newThoughts } });
-                                                        input.value = '';
-                                                    }
-                                                }} className="px-6 bg-charcoal text-white text-[10px] font-bold uppercase">Add</button>
+                                                    const newTags = [...descriptions.info_stack.tags];
+                                                    newTags.splice(i, 1);
+                                                    setDescriptions({ ...descriptions, info_stack: { ...descriptions.info_stack, tags: newTags } });
+                                                }} className="text-muted hover:text-red-500 font-light">×</button>
                                             </div>
+                                        ))}
+                                        <div className="flex border border-stone-200">
+                                            <input type="text" placeholder="Add Tool..." onKeyDown={(e) => {
+                                                if (e.key === 'Enter') {
+                                                    const input = e.currentTarget;
+                                                    const tag = input.value.trim();
+                                                    if (tag) {
+                                                        const newTags = [...(descriptions.info_stack?.tags || [])];
+                                                        newTags.push(tag);
+                                                        setDescriptions({ ...descriptions, info_stack: { ...descriptions.info_stack, tags: newTags } });
+                                                    }
+                                                    input.value = '';
+                                                }
+                                            }} className="p-2 text-[10px] font-bold uppercase outline-none bg-white w-32" />
+                                            <button onClick={(e) => {
+                                                const input = (e.currentTarget.previousSibling as HTMLInputElement);
+                                                const tag = input.value.trim();
+                                                if (tag) {
+                                                    const newTags = [...(descriptions.info_stack?.tags || [])];
+                                                    newTags.push(tag);
+                                                    setDescriptions({ ...descriptions, info_stack: { ...descriptions.info_stack, tags: newTags } });
+                                                    input.value = '';
+                                                }
+                                            }} className="px-6 bg-charcoal text-white text-[10px] font-bold uppercase">Add</button>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         )}
                     </div>
-
                 </div>
             </div>
 
