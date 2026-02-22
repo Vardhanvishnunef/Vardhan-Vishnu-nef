@@ -12,7 +12,8 @@ const Info: React.FC<InfoProps> = ({ onNavigate }) => {
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    fetch('data/site-config.json')
+    const base = import.meta.env.BASE_URL || '/';
+    fetch(`${base}data/site-config.json`, { cache: 'no-store' })
       .then(res => res.json())
       .then(setConfig)
       .catch(err => console.error('Failed to load info config:', err));

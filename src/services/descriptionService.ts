@@ -12,7 +12,8 @@ export type DescriptionsMap = Record<string, Description | string>;
 
 export const loadDescriptions = async (): Promise<Record<string, Description>> => {
     try {
-        const response = await fetch('data/descriptions.json');
+        const base = import.meta.env.BASE_URL || '/';
+        const response = await fetch(`${base}data/descriptions.json`, { cache: 'no-store' });
         const data: DescriptionsMap = await response.json();
 
         // Transform any remaining legacy string formats to objects
