@@ -1,1 +1,155 @@
-{}
+{
+    "cover": {
+        "hero": "images/cover/hero-portrait.webp"
+    },
+    "home": {
+        "title": "Selections",
+        "subtitle": "Cinematic Documentary • 2024",
+        "items": [
+            {
+                "id": "1",
+                "title": "The Jodhpur Suite",
+                "category": "Portrait",
+                "imageUrl": "assets/gallery-3-CfeHq0IX.webp",
+                "date": "2024",
+                "subtitle": "FILM 01",
+                "description": "A study of light and heritage in the Blue City, captured on 35mm."
+            },
+            {
+                "id": "2",
+                "title": "Udaipur Dusk",
+                "category": "Wedding",
+                "subtitle": "CEREMONY",
+                "imageUrl": "images/weddings/udaipur-dusk.webp",
+                "date": "2024"
+            },
+            {
+                "id": "3",
+                "title": "Silhouettes of Grace",
+                "category": "Portrait",
+                "subtitle": "MONOCHROME",
+                "imageUrl": "images/portraits/silhouettes.webp",
+                "date": "2023"
+            },
+            {
+                "id": "4",
+                "title": "The Saffron Bloom",
+                "category": "Ceremony",
+                "subtitle": "HALDI",
+                "description": "\"Chaos and color in perfect harmony. A cinematic take on traditional Indian celebrations.\"",
+                "imageUrl": "images/ceremonies/saffron-bloom.webp",
+                "date": "2024"
+            }
+        ],
+        "instagram_grid": [
+            "images/home/insta-1.webp",
+            "images/home/insta-2.webp",
+            "images/home/insta-3.webp",
+            "images/home/insta-4.webp"
+        ]
+    },
+    "stills": {
+        "title": "Stills",
+        "description": "A meticulous segregation of moments, exploring the tactile essence of light across subjects.",
+        "items": [
+            {
+                "id": "s1",
+                "title": "Eyes of the East",
+                "category": "Portraits",
+                "location": "Mumbai, 2023",
+                "imageUrl": "images/stills/eyes-east.webp",
+                "subtitle": "01"
+            },
+            {
+                "id": "s2",
+                "title": "Heritage Arch",
+                "category": "Objects",
+                "location": "Kerala",
+                "imageUrl": "images/stills/heritage-arch.webp",
+                "subtitle": "02"
+            },
+            {
+                "id": "s3",
+                "title": "The Gilded Door",
+                "category": "Objects",
+                "location": "Jaipur",
+                "imageUrl": "images/stills/gilded-door.webp",
+                "subtitle": "03"
+            },
+            {
+                "id": "s4",
+                "title": "Midnight Stare",
+                "category": "Portraits",
+                "location": "Delhi",
+                "imageUrl": "images/stills/midnight-stare.webp",
+                "subtitle": "04"
+            },
+            {
+                "id": "s5",
+                "title": "Ritual Fire",
+                "category": "Objects",
+                "location": "Varanasi",
+                "imageUrl": "images/stills/ritual-fire.webp",
+                "subtitle": "05"
+            }
+        ]
+    },
+    "info": {
+        "name": "VARDHAN VISHNU",
+        "role": "Cinematic Photographer",
+        "profile": "images/info/profile.webp",
+        "quote": "Photography is not about seeing, but about feeling. I seek to capture the tactile nature of memory through light, texture, and silence.",
+        "bio": "Based in Mumbai, Vardhan Vishnu specializes in a cinematic documentary style that treats every wedding or portrait as a timeless artifact. His work is defined by earthy tones, cinematic compositions, and an intimate understanding of Indian traditions.",
+        "creative_thoughts": [
+            {
+                "role": "admin",
+                "text": "What defines your style?"
+            },
+            {
+                "role": "user",
+                "text": "It's about the grit in the light. The way grain feels like skin."
+            }
+        ],
+        "contact": {
+            "email": "hello@vardhanvishnu.com",
+            "instagram": "vardhanvishnu.nef",
+            "location": "Mumbai • Global"
+        },
+        "availability": "Booking Winter '24"
+    },
+    "stack": {
+        "main": "images/stack/main.webp",
+        "sections": [
+            {
+                "title": "Vision / Hardware",
+                "items": [
+                    {
+                        "name": "Fujifilm GFX 100S",
+                        "details": "Medium Format Digital"
+                    },
+                    {
+                        "name": "GF 80mm f/1.7",
+                        "details": "Primary Optics"
+                    },
+                    {
+                        "name": "Leica M11",
+                        "details": "35mm Digital Rangefinder"
+                    }
+                ]
+            },
+            {
+                "title": "Process / Software",
+                "items": [
+                    {
+                        "name": "Capture One Pro",
+                        "details": "Raw Development"
+                    },
+                    {
+                        "name": "Dehancer Pro",
+                        "details": "Film Emulation"
+                    }
+                ]
+            }
+        ]
+    }
+}
