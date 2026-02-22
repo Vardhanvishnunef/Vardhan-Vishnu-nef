@@ -260,6 +260,40 @@ const AdminDashboard: React.FC<Props> = ({ onNavigate }) => {
         }
     };
 
+    const handleTriggerDeploy = async () => {
+        if (!githubToken) {
+            setMessage('Error: GitHub Token required.');
+            return;
+        }
+        setIsSaving(true);
+        setMessage('Triggering deployment...');
+        try {
+            const res = await fetch(
+                `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/actions/workflows/deploy.yml/dispatches`,
+                {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `token ${githubToken}`,
+                        'Accept': 'application/vnd.github.v3+json',
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ ref: 'main' }),
+                }
+            );
+            if (res.status === 204) {
+                setMessage('Deployment triggered! Site will be live in ~2 minutes.');
+            } else {
+                const err = await res.json();
+                throw new Error(err.message || `Status ${res.status}`);
+            }
+        } catch (err: any) {
+            setMessage(`Deploy error: ${err.message}`);
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+
     const moveImage = (index: number, direction: 'up' | 'down') => {
         const newImages = [...storyImages];
         const newIndex = direction === 'up' ? index - 1 : index + 1;
@@ -397,6 +431,16 @@ const AdminDashboard: React.FC<Props> = ({ onNavigate }) => {
                                             </button>
                                         </div>
                                     ))}
+                                </div>
+                                <div className="pt-4 border-t border-stone-200 space-y-2">
+                                    <p className="text-[9px] text-muted uppercase font-bold tracking-widest">After create / delete:</p>
+                                    <button
+                                        onClick={handleTriggerDeploy}
+                                        disabled={isSaving || !githubToken}
+                                        className="w-full py-4 bg-charcoal text-white text-[10px] font-bold uppercase tracking-widest hover:bg-stone-800 disabled:opacity-50 shadow-lifted transition-all flex items-center justify-center gap-2"
+                                    >
+                                        🚀 Trigger Deploy
+                                    </button>
                                 </div>
                             </>
                         )}
