@@ -4,6 +4,10 @@ import { Page, StoryData, SiteConfig, Thought } from '../../types';
 import { getAllStories } from '../../utils/storyLoader';
 import { loadDescriptions, Description } from '../../services/descriptionService';
 
+// Fix #6: Module-level constants — not recreated on every render
+const REPO_OWNER = 'manojkakitha';
+const REPO_NAME = 'Vardhan-Vishnu';
+
 interface Props {
     onNavigate: (page: Page) => void;
 }
@@ -64,6 +68,13 @@ const AdminDashboard: React.FC<Props> = ({ onNavigate }) => {
         loadDescriptions().then(setDescriptions);
         loadConfig();
 
+        // Auto-sync token from env to localStorage for the session
+        const envToken = import.meta.env.VITE_GITHUB_TOKEN;
+        if (envToken && !localStorage.getItem('gh_token')) {
+            localStorage.setItem('gh_token', envToken);
+            setGithubToken(envToken);
+        }
+
         const indexImages = () => {
             const images: { url: string; story: string }[] = [];
             const storyImagesGlob = import.meta.glob('/public/images/stories/*/*.{jpg,jpeg,png,webp}', { eager: true, query: '?url', import: 'default' });
@@ -79,10 +90,6 @@ const AdminDashboard: React.FC<Props> = ({ onNavigate }) => {
         };
         indexImages();
     }, [onNavigate]);
-
-    // GitHub API Helpers
-    const REPO_OWNER = 'manojkakitha';
-    const REPO_NAME = 'Vardhan-Vishnu';
 
     const githubRequest = async (path: string, method: string = 'GET', body: any = null) => {
         const url = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${path}`;
@@ -192,7 +199,7 @@ const AdminDashboard: React.FC<Props> = ({ onNavigate }) => {
                 description: `A new cinematic story from ${newStory.location}`,
                 slug: newStory.slug,
                 thumbnailUrl: `images/stories/${newStory.slug}/thumbnail.webp`,
-                heroUrl: `images/stories/${newStory.slug}/hero.webp`
+                heroImage: `images/stories/${newStory.slug}/hero.webp`
             };
 
             const metadataPath = `public/images/stories/${newStory.slug}/metadata.json`;
@@ -265,8 +272,9 @@ const AdminDashboard: React.FC<Props> = ({ onNavigate }) => {
                         <p className="text-[10px] font-bold tracking-[0.3em] text-muted uppercase mt-2">v2.0 • Git Active</p>
                     </div>
                     <div className="flex items-center gap-4">
-                        <div className="flex flex-col items-end mr-4">
-                            <label className="text-[8px] font-bold uppercase text-muted mb-1">GitHub Token (PAT)</label>
+                        <div className={`flex items-center gap-2 px-3 py-2 border ${githubToken ? 'border-green-200 bg-green-50' : 'border-stone-200 bg-white'} transition-all`}>
+                            <div className={`w-2 h-2 rounded-full ${githubToken ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`} />
+                            <span className="text-[8px] font-bold uppercase tracking-widest text-muted">{githubToken ? 'Authenticated' : 'Offline'}</span>
                             <input
                                 type="password"
                                 value={githubToken}
@@ -274,8 +282,8 @@ const AdminDashboard: React.FC<Props> = ({ onNavigate }) => {
                                     setGithubToken(e.target.value);
                                     localStorage.setItem('gh_token', e.target.value);
                                 }}
-                                className="p-2 border border-stone-200 text-[10px] w-40 bg-white"
-                                placeholder="Paste token here..."
+                                className="p-1 text-[10px] w-32 bg-transparent outline-none ml-2 border-l border-stone-200 pl-2"
+                                placeholder="GitHub Token..."
                             />
                         </div>
                         {message && <span className={`text-[10px] font-bold uppercase tracking-widest ${message.includes('Error') || message.includes('Failed') ? 'text-red-500' : 'text-green-600'}`}>{message}</span>}
@@ -364,11 +372,11 @@ const AdminDashboard: React.FC<Props> = ({ onNavigate }) => {
                             <div className="space-y-4">
                                 <p className="text-[10px] font-bold uppercase tracking-widest text-muted border-b pb-2">Information Editor</p>
                                 <button
-                                    onClick={() => handleSave(descriptions, 'save-descriptions')}
+                                    onClick={() => handleSave(config, 'save-config')}
                                     disabled={isSaving || !githubToken}
                                     className="w-full py-4 bg-charcoal text-white text-[10px] font-bold uppercase tracking-[0.2em] hover:bg-stone-800 disabled:opacity-50 shadow-lifted transition-all"
                                 >
-                                    Save All Descriptions
+                                    Save Info &amp; Stack
                                 </button>
                             </div>
                         )}
@@ -516,7 +524,8 @@ const AdminDashboard: React.FC<Props> = ({ onNavigate }) => {
                                                 <div className="flex justify-between items-center">
                                                     <span className="text-[10px] font-bold text-muted uppercase">Thought #{i + 1}</span>
                                                     <button onClick={() => {
-                                                        const updatedConfig = { ...config };
+                                                        // Fix #3: Deep clone to avoid shallow mutation bug
+                                                        const updatedConfig = JSON.parse(JSON.stringify(config));
                                                         updatedConfig.info.creative_thoughts.splice(i, 1);
                                                         setConfig(updatedConfig);
                                                     }} className="text-red-500 text-[10px] font-black uppercase hover:underline">Remove</button>
@@ -525,7 +534,8 @@ const AdminDashboard: React.FC<Props> = ({ onNavigate }) => {
                                                     <textarea
                                                         value={thought.text}
                                                         onChange={(e) => {
-                                                            const updatedConfig = { ...config };
+                                                            // Fix #3: Deep clone to avoid shallow-spread mutation bug
+                                                            const updatedConfig = JSON.parse(JSON.stringify(config));
                                                             updatedConfig.info.creative_thoughts[i].text = e.target.value;
                                                             setConfig(updatedConfig);
                                                         }}
@@ -537,7 +547,8 @@ const AdminDashboard: React.FC<Props> = ({ onNavigate }) => {
                                         ))}
                                         <div className="pt-4 border-t border-stone-100 flex justify-center">
                                             <button onClick={() => {
-                                                const updatedConfig = { ...config };
+                                                // Fix #3: Deep clone to avoid shallow mutation bug
+                                                const updatedConfig = JSON.parse(JSON.stringify(config));
                                                 updatedConfig.info.creative_thoughts.push({ role: 'user', text: 'New content here...' });
                                                 setConfig(updatedConfig);
                                             }} className="px-12 py-4 border-2 border-dashed border-stone-200 text-stone-400 text-[10px] font-bold uppercase tracking-[0.2em] hover:border-charcoal hover:text-charcoal transition-all">

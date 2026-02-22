@@ -58,7 +58,7 @@ const Info: React.FC<InfoProps> = ({ onNavigate }) => {
             <div className="pt-12 border-t border-charcoal/10 space-y-8">
               <h3 className="text-[10px] font-bold uppercase tracking-[0.4em] text-muted">Availability / Contact</h3>
               <div className="space-y-4">
-                <p className="text-2xl font-bold text-charcoal">{info.contact.availability}</p>
+                <p className="text-2xl font-bold text-charcoal">{info.availability}</p>
                 <div className="flex flex-col gap-2">
                   <a href={`mailto:${info.contact.email}`} className="text-sm font-bold border-b border-charcoal w-fit pb-1 hover:text-primary hover:border-primary transition-all">{info.contact.email}</a>
                   <a href={`https://instagram.com/${info.contact.instagram}`} target="_blank" rel="noopener noreferrer" className="text-sm font-bold border-b border-charcoal w-fit pb-1 hover:text-primary hover:border-primary transition-all">@{info.contact.instagram}</a>
@@ -82,7 +82,7 @@ const Info: React.FC<InfoProps> = ({ onNavigate }) => {
               </div>
 
               <div className="flex-1 overflow-y-auto p-8 space-y-6 no-scrollbar">
-                {info.creative_thoughts.map((thought, idx) => (
+                {info.creative_thoughts?.map((thought, idx) => (
                   <div
                     key={idx}
                     className={`flex flex-col ${thought.role === 'admin' ? 'items-end' : 'items-start'}`}

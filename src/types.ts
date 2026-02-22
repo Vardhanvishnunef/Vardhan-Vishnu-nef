@@ -53,12 +53,12 @@ export interface SiteConfig {
     profile: string;
     quote: string;
     bio: string;
+    availability: string;
     creative_thoughts: Thought[];
     contact: {
       email: string;
       instagram: string;
       location: string;
-      availability: string;
     };
   };
   stack: {

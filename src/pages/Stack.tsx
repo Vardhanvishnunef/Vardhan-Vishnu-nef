@@ -35,7 +35,7 @@ const Stack: React.FC<StackProps> = ({ onNavigate }) => {
             </div>
           </div>
 
-          <div className="md:col-span-12 space-y-12">
+          <div className="md:col-span-7 space-y-12">
             <div className="space-y-6">
               <h1 className="text-5xl md:text-6xl font-light tracking-tight">The Stack</h1>
               <p className="text-lg text-muted font-serif italic max-w-lg">A curated list of tools and gear used to capture and process these moments.</p>
