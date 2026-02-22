@@ -188,6 +188,24 @@ const AdminDashboard: React.FC<Props> = ({ onNavigate }) => {
             setMessage('Error: GitHub Token required.');
             return;
         }
+
+        // Sanitize slug: lowercase, spaces → hyphens, strip non-alphanumeric
+        const rawSlug = newStory.slug || newStory.client;
+        const safeSlug = rawSlug
+            .toLowerCase()
+            .trim()
+            .replace(/\s+/g, '-')
+            .replace(/[^a-z0-9-]/g, '');
+
+        if (!safeSlug) {
+            setMessage('Error: Slug or Client Name is required to create a story.');
+            return;
+        }
+        if (!newStory.client.trim()) {
+            setMessage('Error: Client name is required.');
+            return;
+        }
+
         setIsSaving(true);
         setMessage('Creating story on GitHub...');
         try {
@@ -197,18 +215,46 @@ const AdminDashboard: React.FC<Props> = ({ onNavigate }) => {
                 location: newStory.location,
                 date: newStory.date,
                 description: `A new cinematic story from ${newStory.location}`,
-                slug: newStory.slug,
-                thumbnailUrl: `images/stories/${newStory.slug}/thumbnail.webp`,
-                heroImage: `images/stories/${newStory.slug}/hero.webp`
+                slug: safeSlug,
+                thumbnailUrl: `images/stories/${safeSlug}/thumbnail.webp`,
+                heroImage: `images/stories/${safeSlug}/hero.webp`
             };
 
-            const metadataPath = `public/images/stories/${newStory.slug}/metadata.json`;
-            await updateFileOnGithub(metadataPath, metadata, `Admin: Create story ${newStory.slug}`);
+            const metadataPath = `public/images/stories/${safeSlug}/metadata.json`;
+            await updateFileOnGithub(metadataPath, metadata, `Admin: Create story ${safeSlug}`);
 
-            setMessage('Story created! It will appear after deployment.');
+            setMessage(`Story '${safeSlug}' created! It will appear after deployment.`);
             setShowCreateForm(false);
         } catch (err: any) {
             setMessage(`Error: ${err.message}`);
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const handleDeleteStory = async (story: StoryData) => {
+        if (!githubToken) {
+            setMessage('Error: GitHub Token required.');
+            return;
+        }
+        const confirmed = window.confirm(
+            `Delete story '${story.client}'?\n\nThis removes the metadata from GitHub and the story will disappear after redeployment. Images in the folder are NOT deleted.`
+        );
+        if (!confirmed) return;
+
+        setIsSaving(true);
+        setMessage(`Deleting story '${story.slug}'...`);
+        try {
+            const metadataPath = `public/images/stories/${story.slug}/metadata.json`;
+            const fileInfo = await githubRequest(metadataPath);
+            await githubRequest(metadataPath, 'DELETE', {
+                message: `Admin: Delete story ${story.slug}`,
+                sha: fileInfo.sha
+            });
+            setMessage(`Story '${story.client}' deleted. Redeploy to update the live site.`);
+            if (selectedStory === story.id) setSelectedStory(null);
+        } catch (err: any) {
+            setMessage(`Error deleting story: ${err.message}`);
         } finally {
             setIsSaving(false);
         }
@@ -331,13 +377,25 @@ const AdminDashboard: React.FC<Props> = ({ onNavigate }) => {
                                 <div className="space-y-2">
                                     <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted mb-4 border-b pb-2">Select Story</h3>
                                     {stories.map(s => (
-                                        <button
+                                        <div
                                             key={s.id}
-                                            onClick={() => setSelectedStory(s.id)}
-                                            className={`w-full text-left p-4 text-xs font-bold border transition-all ${selectedStory === s.id ? 'bg-charcoal text-white border-charcoal' : 'bg-white border-stone-200 hover:border-charcoal'}`}
+                                            className={`flex items-center gap-1 border transition-all ${selectedStory === s.id ? 'bg-charcoal text-white border-charcoal' : 'bg-white border-stone-200 hover:border-charcoal'}`}
                                         >
-                                            {s.client}
-                                        </button>
+                                            <button
+                                                onClick={() => setSelectedStory(s.id)}
+                                                className="flex-1 text-left p-4 text-xs font-bold truncate"
+                                            >
+                                                {s.client}
+                                            </button>
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); handleDeleteStory(s); }}
+                                                disabled={isSaving}
+                                                title="Delete story"
+                                                className={`px-3 py-4 text-[10px] font-black hover:bg-red-500 hover:text-white transition-all disabled:opacity-30 ${selectedStory === s.id ? 'text-stone-300' : 'text-stone-400'}`}
+                                            >
+                                                ✕
+                                            </button>
+                                        </div>
                                     ))}
                                 </div>
                             </>
@@ -606,12 +664,28 @@ const AdminDashboard: React.FC<Props> = ({ onNavigate }) => {
                         <div className="space-y-6">
                             <div className="grid grid-cols-2 gap-6">
                                 <div className="space-y-1">
-                                    <label className="text-[10px] font-bold uppercase text-muted">Client Name</label>
-                                    <input type="text" onChange={(e) => setNewStory({ ...newStory, client: e.target.value })} className="w-full p-3 border border-stone-300 text-sm font-bold" />
+                                    <label className="text-[10px] font-bold uppercase text-muted">Client Name *</label>
+                                    <input
+                                        type="text"
+                                        placeholder="e.g. Priya & Arjun"
+                                        onChange={(e) => {
+                                            const client = e.target.value;
+                                            const autoSlug = client.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+                                            setNewStory({ ...newStory, client, slug: newStory.slug || autoSlug });
+                                        }}
+                                        className="w-full p-3 border border-stone-300 text-sm font-bold"
+                                    />
                                 </div>
                                 <div className="space-y-1">
-                                    <label className="text-[10px] font-bold uppercase text-muted">Slug (url unique)</label>
-                                    <input type="text" onChange={(e) => setNewStory({ ...newStory, slug: e.target.value })} className="w-full p-3 border border-stone-300 text-xs font-mono" />
+                                    <label className="text-[10px] font-bold uppercase text-muted">Slug (folder name)</label>
+                                    <input
+                                        type="text"
+                                        value={newStory.slug}
+                                        placeholder="auto-generated"
+                                        onChange={(e) => setNewStory({ ...newStory, slug: e.target.value })}
+                                        className="w-full p-3 border border-stone-300 text-xs font-mono"
+                                    />
+                                    <p className="text-[9px] text-muted">Only lowercase letters, numbers, hyphens</p>
                                 </div>
                             </div>
                             <div className="grid grid-cols-2 gap-6">
