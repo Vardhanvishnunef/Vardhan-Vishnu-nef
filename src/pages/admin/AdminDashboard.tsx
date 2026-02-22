@@ -272,19 +272,9 @@ const AdminDashboard: React.FC<Props> = ({ onNavigate }) => {
                         <p className="text-[10px] font-bold tracking-[0.3em] text-muted uppercase mt-2">v2.0 • Git Active</p>
                     </div>
                     <div className="flex items-center gap-4">
-                        <div className={`flex items-center gap-2 px-3 py-2 border ${githubToken ? 'border-green-200 bg-green-50' : 'border-stone-200 bg-white'} transition-all`}>
+                        <div className={`flex items-center gap-2 px-3 py-2 border ${githubToken ? 'border-green-200 bg-green-50' : 'border-red-100 bg-red-50'} transition-all`}>
                             <div className={`w-2 h-2 rounded-full ${githubToken ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`} />
-                            <span className="text-[8px] font-bold uppercase tracking-widest text-muted">{githubToken ? 'Authenticated' : 'Offline'}</span>
-                            <input
-                                type="password"
-                                value={githubToken}
-                                onChange={(e) => {
-                                    setGithubToken(e.target.value);
-                                    localStorage.setItem('gh_token', e.target.value);
-                                }}
-                                className="p-1 text-[10px] w-32 bg-transparent outline-none ml-2 border-l border-stone-200 pl-2"
-                                placeholder="GitHub Token..."
-                            />
+                            <span className="text-[8px] font-bold uppercase tracking-widest text-muted">{githubToken ? 'Authenticated' : 'No Token'}</span>
                         </div>
                         {message && <span className={`text-[10px] font-bold uppercase tracking-widest ${message.includes('Error') || message.includes('Failed') ? 'text-red-500' : 'text-green-600'}`}>{message}</span>}
                         <button onClick={() => onNavigate('home')} className="px-6 py-3 border border-charcoal text-[10px] font-bold uppercase tracking-widest hover:bg-charcoal hover:text-white transition-all">Exit Dashboard</button>
