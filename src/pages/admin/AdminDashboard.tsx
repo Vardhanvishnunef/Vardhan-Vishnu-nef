@@ -19,7 +19,7 @@ const AdminDashboard: React.FC<Props> = ({ onNavigate }) => {
     const [storyImages, setStoryImages] = useState<string[]>([]);
     const [isSaving, setIsSaving] = useState(false);
     const [message, setMessage] = useState('');
-    const [githubToken, setGithubToken] = useState<string>(localStorage.getItem('gh_token') || '');
+    const [githubToken, setGithubToken] = useState<string>(localStorage.getItem('gh_token') || import.meta.env.VITE_GITHUB_TOKEN || '');
     const [deployLog, setDeployLog] = useState('');
 
     // Story Creation State
@@ -503,7 +503,7 @@ const AdminDashboard: React.FC<Props> = ({ onNavigate }) => {
                             </div>
                         )}
 
-                        {activeTab === 'info' && (
+                        {activeTab === 'info' && config && (
                             <div className="space-y-12">
                                 <div className="bg-white p-10 border border-stone-200 space-y-8">
                                     <div className="space-y-2">
@@ -511,34 +511,23 @@ const AdminDashboard: React.FC<Props> = ({ onNavigate }) => {
                                         <p className="text-[10px] font-bold text-muted uppercase tracking-widest mb-4">Core philosophy items</p>
                                     </div>
                                     <div className="space-y-6">
-                                        {descriptions.info_thoughts?.list?.map((thought: Thought, i: number) => (
-                                            <div key={thought.id} className="space-y-3 p-6 bg-limestone/50 border border-stone-100">
+                                        {config.info.creative_thoughts?.map((thought: Thought, i: number) => (
+                                            <div key={i} className="space-y-3 p-6 bg-limestone/50 border border-stone-100">
                                                 <div className="flex justify-between items-center">
                                                     <span className="text-[10px] font-bold text-muted uppercase">Thought #{i + 1}</span>
                                                     <button onClick={() => {
-                                                        const newList = [...descriptions.info_thoughts.list];
-                                                        newList.splice(i, 1);
-                                                        setDescriptions({ ...descriptions, info_thoughts: { ...descriptions.info_thoughts, list: newList } });
+                                                        const updatedConfig = { ...config };
+                                                        updatedConfig.info.creative_thoughts.splice(i, 1);
+                                                        setConfig(updatedConfig);
                                                     }} className="text-red-500 text-[10px] font-black uppercase hover:underline">Remove</button>
                                                 </div>
                                                 <div className="space-y-4">
-                                                    <input
-                                                        type="text"
-                                                        value={thought.title}
-                                                        onChange={(e) => {
-                                                            const newList = [...descriptions.info_thoughts.list];
-                                                            newList[i].title = e.target.value;
-                                                            setDescriptions({ ...descriptions, info_thoughts: { ...descriptions.info_thoughts, list: newList } });
-                                                        }}
-                                                        className="w-full p-4 border border-stone-200 text-xs font-bold uppercase tracking-widest outline-none focus:ring-1 focus:ring-primary"
-                                                        placeholder="Title"
-                                                    />
                                                     <textarea
                                                         value={thought.text}
                                                         onChange={(e) => {
-                                                            const newList = [...descriptions.info_thoughts.list];
-                                                            newList[i].text = e.target.value;
-                                                            setDescriptions({ ...descriptions, info_thoughts: { ...descriptions.info_thoughts, list: newList } });
+                                                            const updatedConfig = { ...config };
+                                                            updatedConfig.info.creative_thoughts[i].text = e.target.value;
+                                                            setConfig(updatedConfig);
                                                         }}
                                                         className="w-full p-4 border border-stone-200 text-xs font-medium outline-none focus:ring-1 focus:ring-primary min-h-[120px]"
                                                         placeholder="Content"
@@ -548,9 +537,9 @@ const AdminDashboard: React.FC<Props> = ({ onNavigate }) => {
                                         ))}
                                         <div className="pt-4 border-t border-stone-100 flex justify-center">
                                             <button onClick={() => {
-                                                const newList = [...(descriptions.info_thoughts?.list || [])];
-                                                newList.push({ id: `thought-${Date.now()}`, title: 'NEW TOPIC', text: 'Content goes here...' });
-                                                setDescriptions({ ...descriptions, info_thoughts: { ...descriptions.info_thoughts, list: newList } });
+                                                const updatedConfig = { ...config };
+                                                updatedConfig.info.creative_thoughts.push({ role: 'user', text: 'New content here...' });
+                                                setConfig(updatedConfig);
                                             }} className="px-12 py-4 border-2 border-dashed border-stone-200 text-stone-400 text-[10px] font-bold uppercase tracking-[0.2em] hover:border-charcoal hover:text-charcoal transition-all">
                                                 + Add Thought Item
                                             </button>
@@ -559,44 +548,44 @@ const AdminDashboard: React.FC<Props> = ({ onNavigate }) => {
                                 </div>
                                 <div className="bg-white p-10 border border-stone-200 space-y-8">
                                     <div className="space-y-2">
-                                        <h3 className="text-2xl font-black uppercase tracking-tight">Stack & Tools</h3>
+                                        <h3 className="text-2xl font-black uppercase tracking-tight">Technical Stack</h3>
                                         <p className="text-[10px] font-bold text-muted uppercase tracking-widest mb-4">Manage listed expertise</p>
                                     </div>
-                                    <div className="flex flex-wrap gap-2">
-                                        {descriptions.info_stack?.tags?.map((tag: string, i: number) => (
-                                            <div key={i} className="px-4 py-2 bg-limestone text-[10px] font-bold uppercase tracking-widest flex items-center gap-2 border border-stone-100">
-                                                {tag}
-                                                <button onClick={() => {
-                                                    const newTags = [...descriptions.info_stack.tags];
-                                                    newTags.splice(i, 1);
-                                                    setDescriptions({ ...descriptions, info_stack: { ...descriptions.info_stack, tags: newTags } });
-                                                }} className="text-muted hover:text-red-500 font-light">×</button>
+                                    <div className="space-y-4">
+                                        {config.stack.sections.map((section, si) => (
+                                            <div key={si} className="p-4 border border-stone-100 bg-stone-50">
+                                                <h4 className="text-[10px] font-bold uppercase mb-4">{section.title}</h4>
+                                                <div className="flex flex-wrap gap-2">
+                                                    {section.items.map((item, ii) => (
+                                                        <div key={ii} className="px-3 py-1 bg-white border border-stone-200 text-[9px] font-bold uppercase flex items-center gap-2">
+                                                            {item.name}
+                                                            <button onClick={() => {
+                                                                const updatedConfig = { ...config };
+                                                                updatedConfig.stack.sections[si].items.splice(ii, 1);
+                                                                setConfig(updatedConfig);
+                                                            }} className="text-muted hover:text-red-500">×</button>
+                                                        </div>
+                                                    ))}
+                                                    <input
+                                                        type="text"
+                                                        placeholder="Add item..."
+                                                        onKeyDown={(e) => {
+                                                            if (e.key === 'Enter') {
+                                                                const input = e.currentTarget;
+                                                                const val = input.value.trim();
+                                                                if (val) {
+                                                                    const updatedConfig = { ...config };
+                                                                    updatedConfig.stack.sections[si].items.push({ name: val, details: '' });
+                                                                    setConfig(updatedConfig);
+                                                                    input.value = '';
+                                                                }
+                                                            }
+                                                        }}
+                                                        className="p-1 text-[9px] border-b border-stone-300 outline-none w-20 bg-transparent"
+                                                    />
+                                                </div>
                                             </div>
                                         ))}
-                                        <div className="flex border border-stone-200">
-                                            <input type="text" placeholder="Add Tool..." onKeyDown={(e) => {
-                                                if (e.key === 'Enter') {
-                                                    const input = e.currentTarget;
-                                                    const tag = input.value.trim();
-                                                    if (tag) {
-                                                        const newTags = [...(descriptions.info_stack?.tags || [])];
-                                                        newTags.push(tag);
-                                                        setDescriptions({ ...descriptions, info_stack: { ...descriptions.info_stack, tags: newTags } });
-                                                    }
-                                                    input.value = '';
-                                                }
-                                            }} className="p-2 text-[10px] font-bold uppercase outline-none bg-white w-32" />
-                                            <button onClick={(e) => {
-                                                const input = (e.currentTarget.previousSibling as HTMLInputElement);
-                                                const tag = input.value.trim();
-                                                if (tag) {
-                                                    const newTags = [...(descriptions.info_stack?.tags || [])];
-                                                    newTags.push(tag);
-                                                    setDescriptions({ ...descriptions, info_stack: { ...descriptions.info_stack, tags: newTags } });
-                                                    input.value = '';
-                                                }
-                                            }} className="px-6 bg-charcoal text-white text-[10px] font-bold uppercase">Add</button>
-                                        </div>
                                     </div>
                                 </div>
                             </div>
