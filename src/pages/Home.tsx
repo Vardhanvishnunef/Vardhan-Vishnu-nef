@@ -26,20 +26,20 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
           <Logo className="h-full w-48 md:w-64" />
         </div>
         <div className="flex items-center gap-6">
-          <a href={`https://www.instagram.com/${config.info.contact.instagram}/`} target="_blank" rel="noopener noreferrer" className="hidden sm:block text-[10px] font-bold uppercase tracking-[0.2em] text-muted hover:text-charcoal transition-colors">
-            @{config.info.contact.instagram}
+          <a href={`https://www.instagram.com/${config.info?.contact?.instagram}/`} target="_blank" rel="noopener noreferrer" className="hidden sm:block text-[10px] font-bold uppercase tracking-[0.2em] text-muted hover:text-charcoal transition-colors">
+            @{config.info?.contact?.instagram || 'instagram'}
           </a>
         </div>
       </header>
 
       <main className="max-w-6xl mx-auto pt-12 px-6">
         <div className="mb-16">
-          <h1 className="text-5xl md:text-7xl font-extrabold tracking-tighter text-charcoal">{config.home.title}</h1>
-          <p className="text-[10px] md:text-xs text-muted font-bold tracking-[0.3em] mt-4 uppercase">{config.home.subtitle}</p>
+          <h1 className="text-5xl md:text-7xl font-extrabold tracking-tighter text-charcoal">{config.home?.title || 'Untitled'}</h1>
+          <p className="text-[10px] md:text-xs text-muted font-bold tracking-[0.3em] mt-4 uppercase">{config.home?.subtitle}</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-24">
-          {config.home.items.map((item, idx) => (
+          {config.home?.items?.map((item, idx) => (
             <section
               key={item.id}
               className={`group flex flex-col ${idx % 2 === 1 ? 'md:mt-32' : ''}`}
@@ -77,17 +77,17 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
               <p className="text-xs text-muted font-bold tracking-[0.2em] mt-2 uppercase">Live Feed Updates</p>
             </div>
             <a
-              href={`https://www.instagram.com/${config.info.contact.instagram}/`}
+              href={`https://www.instagram.com/${config.info?.contact?.instagram}/`}
               target="_blank"
               rel="noopener noreferrer"
               className="px-6 py-3 border border-charcoal text-[10px] font-bold uppercase tracking-widest hover:bg-charcoal hover:text-white transition-all"
             >
-              Follow @{config.info.contact.instagram}
+              Follow @{config.info?.contact?.instagram || 'instagram'}
             </a>
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {config.home.instagram_grid.map((url, i) => (
+            {config.home?.instagram_grid?.map((url, i) => (
               <div key={i} className="aspect-square bg-paper border border-border-paper shadow-flat overflow-hidden group cursor-pointer">
                 <img
                   src={url}

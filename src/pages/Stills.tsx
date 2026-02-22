@@ -21,9 +21,9 @@ const Stills: React.FC<StillsProps> = ({ onNavigate }) => {
 
   if (!config) return <div className="min-h-screen flex items-center justify-center"><p className="text-[10px] font-bold uppercase tracking-widest animate-pulse">Gathering Moments...</p></div>;
 
-  const filteredItems = config.stills.items.filter(item =>
+  const filteredItems = config.stills?.items?.filter(item =>
     activeFilter === 'All' || item.category === activeFilter
-  );
+  ) || [];
 
   return (
     <div className="min-h-screen pb-32 transition-colors duration-500">
@@ -69,9 +69,9 @@ const Stills: React.FC<StillsProps> = ({ onNavigate }) => {
       <main className="max-w-6xl mx-auto pt-12 px-6">
         <div className="mb-16 md:flex justify-between items-end">
           <div>
-            <h1 className="text-5xl md:text-6xl font-light tracking-tight">{config.stills.title}</h1>
+            <h1 className="text-5xl md:text-6xl font-light tracking-tight">{config.stills?.title || 'Stills'}</h1>
             <p className="text-sm text-muted mt-4 max-w-sm leading-relaxed font-serif italic">
-              {config.stills.description}
+              {config.stills?.description}
             </p>
           </div>
           <div className="mt-8 md:mt-0">
