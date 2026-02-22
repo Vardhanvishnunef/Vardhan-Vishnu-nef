@@ -27,7 +27,7 @@ const Info: React.FC<InfoProps> = ({ onNavigate }) => {
   const { info } = config;
 
   return (
-    <div className="min-h-screen bg-limestone pb-32">
+    <div className="min-h-screen pb-32">
       <header className="sticky top-0 z-40 bg-limestone/95 backdrop-blur-md px-6 py-4 flex justify-between items-center border-b border-charcoal/5">
         <div className="h-14 md:h-16 flex items-center">
           <Logo className="h-full w-48 md:w-64" />
@@ -89,8 +89,8 @@ const Info: React.FC<InfoProps> = ({ onNavigate }) => {
                   >
                     <div
                       className={`max-w-[85%] p-5 text-sm font-medium tracking-tight leading-snug shadow-sm transform transition-all hover:scale-[1.01] ${thought.role === 'admin'
-                          ? 'bg-charcoal text-white rounded-l-2xl rounded-tr-2xl'
-                          : 'bg-limestone border border-charcoal/10 text-charcoal rounded-r-2xl rounded-tl-2xl'
+                        ? 'bg-charcoal text-white rounded-l-2xl rounded-tr-2xl'
+                        : 'bg-limestone border border-charcoal/10 text-charcoal rounded-r-2xl rounded-tl-2xl'
                         }`}
                     >
                       {thought.text}

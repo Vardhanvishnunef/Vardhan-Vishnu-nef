@@ -17,7 +17,7 @@ const Stack: React.FC<StackProps> = ({ onNavigate }) => {
       .catch(err => console.error('Failed to load stack config:', err));
   }, []);
 
-  if (!config) return <div className="min-h-screen bg-limestone" />;
+  if (!config) return <div className="min-h-screen" />;
 
   return (
     <div className="min-h-screen pb-32">

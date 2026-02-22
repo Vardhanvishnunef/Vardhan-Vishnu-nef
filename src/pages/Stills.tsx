@@ -19,7 +19,7 @@ const Stills: React.FC<StillsProps> = ({ onNavigate }) => {
       .catch(err => console.error('Failed to load stills config:', err));
   }, []);
 
-  if (!config) return <div className="min-h-screen bg-limestone flex items-center justify-center"><p className="text-[10px] font-bold uppercase tracking-widest animate-pulse">Gathering Moments...</p></div>;
+  if (!config) return <div className="min-h-screen flex items-center justify-center"><p className="text-[10px] font-bold uppercase tracking-widest animate-pulse">Gathering Moments...</p></div>;
 
   const filteredItems = config.stills.items.filter(item =>
     activeFilter === 'All' || item.category === activeFilter

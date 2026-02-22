@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Page, StoryData, SiteConfig, Thought } from '../../types';
 import { getAllStories } from '../../utils/storyLoader';
 import { loadDescriptions, Description } from '../../services/descriptionService';
@@ -24,18 +24,61 @@ const AdminDashboard: React.FC<Props> = ({ onNavigate }) => {
     const [newStory, setNewStory] = useState({ client: '', location: '', date: '', slug: '' });
     const [showCreateForm, setShowCreateForm] = useState(false);
 
+    // Image Picker State
+    const [showImagePicker, setShowImagePicker] = useState(false);
+    const [allImages, setAllImages] = useState<{ url: string; story: string }[]>([]);
+    const [pickerTarget, setPickerTarget] = useState<{ type: 'home' | 'stills'; index: number } | null>(null);
+    const [pickerSearch, setPickerSearch] = useState('');
+    const [displayLimit, setDisplayLimit] = useState(48);
+
     useEffect(() => {
         if (!sessionStorage.getItem('isAdmin')) {
             onNavigate('admin');
             return;
         }
 
+        const tryFetch = async (url: string) => {
+            try {
+                const res = await fetch(url);
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const data = await res.json();
+                setConfig(data);
+                return true;
+            } catch (e) {
+                console.warn(`Failed to fetch from ${url}:`, e);
+                return false;
+            }
+        };
+
+        const loadConfig = async () => {
+            const baseUrl = import.meta.env.BASE_URL || '/';
+            // Try relative first (should work on dev and most prod setups)
+            if (await tryFetch('data/site-config.json')) return;
+            // Try absolute with base URL if relative fails
+            if (baseUrl !== '/' && await tryFetch(`${baseUrl}data/site-config.json`)) return;
+
+            setMessage('Error: Failed to load site-config.json');
+        };
+
         setStories(getAllStories());
         loadDescriptions().then(setDescriptions);
-        fetch('/data/site-config.json')
-            .then(res => res.json())
-            .then(setConfig)
-            .catch(err => console.error('Failed to load site-config:', err));
+        loadConfig();
+
+        // Index images for the picker once on mount
+        const indexImages = () => {
+            const images: { url: string; story: string }[] = [];
+            const storyImagesGlob = import.meta.glob('/public/images/stories/*/*.{jpg,jpeg,png,webp}', { eager: true, query: '?url', import: 'default' });
+
+            Object.entries(storyImagesGlob).forEach(([path, url]) => {
+                const storySlug = path.split('/')[4];
+                images.push({
+                    url: (url as string).replace(import.meta.env.BASE_URL, ''),
+                    story: storySlug
+                });
+            });
+            setAllImages(images);
+        };
+        indexImages();
     }, [onNavigate]);
 
     useEffect(() => {
@@ -105,6 +148,45 @@ const AdminDashboard: React.FC<Props> = ({ onNavigate }) => {
             [newImages[index], newImages[newIndex]] = [newImages[newIndex], newImages[index]];
             setStoryImages(newImages);
         }
+    };
+
+    const handleOpenImagePicker = (type: 'home' | 'stills', index: number) => {
+        setPickerTarget({ type, index });
+        setDisplayLimit(48); // Reset limit when opening
+        setShowImagePicker(true);
+    };
+
+    const filteredImages = useMemo(() => {
+        const search = pickerSearch.toLowerCase();
+        return allImages.filter(img =>
+            img.story.toLowerCase().includes(search) ||
+            img.url.toLowerCase().includes(search)
+        );
+    }, [allImages, pickerSearch]);
+
+    const handleSelectImage = (url: string) => {
+        if (!pickerTarget || !config) return;
+
+        const updatedConfig = { ...config };
+        const cleanedUrl = url.startsWith('/') ? url.substring(1) : url;
+
+        if (pickerTarget.type === 'home') {
+            updatedConfig.home.items[pickerTarget.index].imageUrl = cleanedUrl;
+        } else {
+            updatedConfig.stills.items[pickerTarget.index].imageUrl = cleanedUrl;
+        }
+
+        setConfig(updatedConfig);
+        setShowImagePicker(false);
+        setPickerTarget(null);
+    };
+
+    const resolveUrl = (url: string) => {
+        if (!url) return '';
+        if (url.startsWith('http')) return url;
+        const baseUrl = import.meta.env.BASE_URL || '/';
+        const cleanPath = url.startsWith('/') ? url.substring(1) : url;
+        return `${baseUrl}${cleanPath}`;
     };
 
     return (
@@ -181,10 +263,23 @@ const AdminDashboard: React.FC<Props> = ({ onNavigate }) => {
                             </>
                         )}
                         {activeTab === 'home-stills' && (
-                            <div className="p-6 bg-white border border-stone-200">
-                                <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted mb-4">Quick Stats</h3>
-                                <p className="text-2xl font-black">{config?.home.items.length} Home Items</p>
-                                <p className="text-2xl font-black mt-2">{config?.stills.items.length} Still Items</p>
+                            <div className="space-y-4">
+                                <div className="p-6 bg-white border border-stone-200">
+                                    <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted mb-4">Quick Stats</h3>
+                                    {config ? (
+                                        <>
+                                            <p className="text-2xl font-black">{config.home.items.length} Home Items</p>
+                                            <p className="text-2xl font-black mt-2">{config.stills.items.length} Still Items</p>
+                                        </>
+                                    ) : (
+                                        <p className="text-xs text-muted animate-pulse">Loading data...</p>
+                                    )}
+                                </div>
+                                <div className="p-4 bg-stone-50 border border-stone-200 border-dashed">
+                                    <h3 className="text-[8px] font-bold uppercase tracking-widest text-muted mb-2">System Diagnostics</h3>
+                                    <p className="text-[9px] font-mono text-muted overflow-hidden text-ellipsis">Base: {import.meta.env.BASE_URL || '/'}</p>
+                                    <p className="text-[9px] font-mono text-muted">Config: {config ? 'Loaded' : 'Missing'}</p>
+                                </div>
                             </div>
                         )}
                     </div>
@@ -284,6 +379,14 @@ const AdminDashboard: React.FC<Props> = ({ onNavigate }) => {
                             </div>
                         )}
 
+                        {activeTab === 'home-stills' && !config && (
+                            <div className="flex flex-col items-center justify-center py-32 border-2 border-dashed border-stone-100 rounded-lg">
+                                <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mb-6"></div>
+                                <h2 className="text-lg font-bold uppercase tracking-widest text-charcoal">Loading Selections...</h2>
+                                <p className="text-xs text-muted mt-2">Connecting to data warehouse</p>
+                            </div>
+                        )}
+
                         {activeTab === 'home-stills' && config && (
                             <div className="space-y-12">
                                 <div className="flex justify-between items-end border-b border-charcoal/10 pb-4">
@@ -312,7 +415,12 @@ const AdminDashboard: React.FC<Props> = ({ onNavigate }) => {
                                             <label className="text-[10px] font-bold uppercase text-muted tracking-widest">Grid Portfolio Items</label>
                                             <div className="grid grid-cols-1 gap-4">
                                                 {config.home.items.map((item, i) => (
-                                                    <div key={i} className="bg-white p-6 border border-stone-200 grid grid-cols-1 md:grid-cols-6 gap-6 items-end group">
+                                                    <div key={i} className="bg-white p-6 border border-stone-200 grid grid-cols-1 md:grid-cols-7 gap-6 items-end group">
+                                                        <div className="md:col-span-1">
+                                                            <div className="aspect-[3/4] bg-stone-100 border border-stone-100 overflow-hidden">
+                                                                <img src={resolveUrl(item.imageUrl)} className="w-full h-full object-cover" alt="" onError={(e) => (e.currentTarget.src = 'https://placehold.co/300x400?text=Missing')} />
+                                                            </div>
+                                                        </div>
                                                         <div className="md:col-span-2 space-y-2">
                                                             <label className="text-[8px] font-bold uppercase text-muted">Project Title</label>
                                                             <input value={item.title} onChange={(e) => {
@@ -331,11 +439,19 @@ const AdminDashboard: React.FC<Props> = ({ onNavigate }) => {
                                                         </div>
                                                         <div className="md:col-span-2 space-y-2">
                                                             <label className="text-[8px] font-bold uppercase text-muted">Image Path</label>
-                                                            <input value={item.imageUrl} onChange={(e) => {
-                                                                const items = [...config.home.items];
-                                                                items[i] = { ...items[i], imageUrl: e.target.value };
-                                                                setConfig({ ...config, home: { ...config.home, items } });
-                                                            }} className="w-full p-2 border-stone-100 border text-xs font-mono" />
+                                                            <div className="flex gap-2">
+                                                                <input value={item.imageUrl} onChange={(e) => {
+                                                                    const items = [...config.home.items];
+                                                                    items[i] = { ...items[i], imageUrl: e.target.value };
+                                                                    setConfig({ ...config, home: { ...config.home, items } });
+                                                                }} className="flex-1 p-2 border-stone-100 border text-xs font-mono" />
+                                                                <button
+                                                                    onClick={() => handleOpenImagePicker('home', i)}
+                                                                    className="px-3 bg-stone-100 border border-stone-200 text-[8px] font-black uppercase hover:bg-stone-200"
+                                                                >
+                                                                    Pick
+                                                                </button>
+                                                            </div>
                                                         </div>
                                                         <div className="md:col-span-1">
                                                             <button onClick={() => {
@@ -373,23 +489,36 @@ const AdminDashboard: React.FC<Props> = ({ onNavigate }) => {
                                             <label className="text-[10px] font-bold uppercase text-muted tracking-widest">Stills Grid</label>
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                 {config.stills.items.map((item, i) => (
-                                                    <div key={i} className="bg-white p-4 border border-stone-200 space-y-3">
-                                                        <div className="flex justify-between">
-                                                            <input value={item.title} onChange={(e) => {
-                                                                const items = [...config.stills.items];
-                                                                items[i] = { ...items[i], title: e.target.value };
-                                                                setConfig({ ...config, stills: { ...config.stills, items } });
-                                                            }} className="p-1 border-b border-stone-100 text-xs font-bold w-full" placeholder="Title" />
-                                                            <button onClick={() => {
-                                                                const items = config.stills.items.filter((_, idx) => idx !== i);
-                                                                setConfig({ ...config, stills: { ...config.stills, items } });
-                                                            }} className="text-red-500 hover:text-red-700 ml-2">×</button>
+                                                    <div key={i} className="bg-white p-4 border border-stone-200 flex gap-4">
+                                                        <div className="w-20 aspect-square bg-stone-100 overflow-hidden shrink-0">
+                                                            <img src={resolveUrl(item.imageUrl)} className="w-full h-full object-cover" alt="" onError={(e) => (e.currentTarget.src = 'https://placehold.co/100x100?text=Err')} />
                                                         </div>
-                                                        <input value={item.imageUrl} onChange={(e) => {
-                                                            const items = [...config.stills.items];
-                                                            items[i] = { ...items[i], imageUrl: e.target.value };
-                                                            setConfig({ ...config, stills: { ...config.stills, items } });
-                                                        }} className="w-full p-1 text-[10px] font-mono text-muted" placeholder="Path..." />
+                                                        <div className="flex-1 space-y-3">
+                                                            <div className="flex justify-between">
+                                                                <input value={item.title} onChange={(e) => {
+                                                                    const items = [...config.stills.items];
+                                                                    items[i] = { ...items[i], title: e.target.value };
+                                                                    setConfig({ ...config, stills: { ...config.stills, items } });
+                                                                }} className="p-1 border-b border-stone-100 text-xs font-bold w-full" placeholder="Title" />
+                                                                <button onClick={() => {
+                                                                    const items = config.stills.items.filter((_, idx) => idx !== i);
+                                                                    setConfig({ ...config, stills: { ...config.stills, items } });
+                                                                }} className="text-red-500 hover:text-red-700 ml-2">×</button>
+                                                            </div>
+                                                            <div className="flex gap-2">
+                                                                <input value={item.imageUrl} onChange={(e) => {
+                                                                    const items = [...config.stills.items];
+                                                                    items[i] = { ...items[i], imageUrl: e.target.value };
+                                                                    setConfig({ ...config, stills: { ...config.stills, items } });
+                                                                }} className="flex-1 p-1 text-[10px] font-mono text-muted" placeholder="Path..." />
+                                                                <button
+                                                                    onClick={() => handleOpenImagePicker('stills', i)}
+                                                                    className="px-2 bg-stone-100 border border-stone-200 text-[8px] font-black uppercase hover:bg-stone-200"
+                                                                >
+                                                                    Pick
+                                                                </button>
+                                                            </div>
+                                                        </div>
                                                     </div>
                                                 ))}
                                                 <button onClick={() => {
@@ -522,6 +651,64 @@ const AdminDashboard: React.FC<Props> = ({ onNavigate }) => {
                                 </div>
                             </div>
                             <button onClick={handleCreateStory} disabled={isSaving} className="w-full py-5 bg-charcoal text-white text-[10px] font-bold uppercase tracking-[0.4em] hover:bg-stone-800 transition-all shadow-lifted">Initialize Collection</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Image Picker Modal */}
+            {showImagePicker && (
+                <div className="fixed inset-0 bg-black/90 z-[200] flex items-center justify-center p-6 backdrop-blur-md">
+                    <div className="bg-white w-full max-w-5xl h-[80vh] flex flex-col border-t-8 border-primary relative">
+                        <button onClick={() => setShowImagePicker(false)} className="absolute top-4 right-4 text-2xl font-light hover:text-primary z-10">×</button>
+
+                        <div className="p-8 border-b border-stone-100">
+                            <h2 className="text-2xl font-black uppercase tracking-tight mb-4">Select Asset</h2>
+                            <div className="flex gap-4">
+                                <input
+                                    type="text"
+                                    placeholder="Search stories..."
+                                    value={pickerSearch}
+                                    onChange={(e) => setPickerSearch(e.target.value)}
+                                    className="flex-1 p-3 bg-stone-50 border border-stone-200 text-xs font-bold uppercase tracking-widest"
+                                />
+                                <div className="px-4 py-3 bg-stone-100 text-[10px] font-bold text-muted uppercase flex items-center">
+                                    {allImages.length} Assets Found
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="flex-1 overflow-y-auto p-8 no-scrollbar">
+                            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-8">
+                                {filteredImages.slice(0, displayLimit).map((img, i) => (
+                                    <button
+                                        key={i}
+                                        onClick={() => handleSelectImage(img.url)}
+                                        className="group relative aspect-square bg-stone-100 border border-stone-200 hover:border-primary transition-all overflow-hidden"
+                                    >
+                                        <img
+                                            src={resolveUrl(img.url)}
+                                            loading="lazy"
+                                            className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-transform group-hover:scale-110"
+                                            alt=""
+                                        />
+                                        <div className="absolute inset-x-0 bottom-0 bg-black/60 p-2 translate-y-full group-hover:translate-y-0 transition-transform">
+                                            <p className="text-[8px] font-bold text-white uppercase truncate">{img.story}</p>
+                                        </div>
+                                    </button>
+                                ))}
+                            </div>
+
+                            {displayLimit < filteredImages.length && (
+                                <div className="flex justify-center pb-12">
+                                    <button
+                                        onClick={() => setDisplayLimit(prev => prev + 48)}
+                                        className="px-12 py-4 bg-charcoal text-white text-[10px] font-bold uppercase tracking-[0.2em] hover:bg-stone-800 transition-all shadow-lifted"
+                                    >
+                                        Load More Results ({filteredImages.length - displayLimit} Remaining)
+                                    </button>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
