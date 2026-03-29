@@ -1,0 +1,182 @@
+{
+  "Aakash & vishnavi Engagement": {
+    "hero": "hero.webp",
+    "thumbnail": "thumbnail.webp",
+    "carousel": [],
+    "polaroids": [
+      "gallery-1.webp",
+      "gallery-2.webp",
+      "gallery-3.webp",
+      "gallery-4.webp",
+      "gallery-5.webp"
+    ]
+  },
+  "Automobiles": {
+    "hero": "hero.webp",
+    "thumbnail": "thumbnail.webp",
+    "carousel": [
+      "1.webp",
+      "2.webp",
+      "3.webp"
+    ],
+    "polaroids": [
+      "gallery-1.webp",
+      "gallery-2.webp",
+      "gallery-3.webp"
+    ]
+  },
+  "Baby": {
+    "hero": "hero.webp",
+    "thumbnail": "thumbnail.webp",
+    "carousel": [],
+    "polaroids": [
+      "gallery-1.webp",
+      "gallery-2.webp",
+      "gallery-3.webp",
+      "gallery-4.webp",
+      "gallery-5.webp",
+      "gallery-6.webp"
+    ]
+  },
+  "Baby Shower": {
+    "hero": "hero.webp",
+    "thumbnail": "thumbnail.webp",
+    "carousel": [],
+    "polaroids": [
+      "gallery-1.webp",
+      "gallery-10.webp",
+      "gallery-2.webp",
+      "gallery-3.webp",
+      "gallery-4.webp",
+      "gallery-5.webp",
+      "gallery-6.webp",
+      "gallery-7.webp",
+      "gallery-8.webp",
+      "gallery-9.webp"
+    ]
+  },
+  "Coffee": {
+    "hero": "hero.webp",
+    "thumbnail": "thumbnail.webp",
+    "carousel": [],
+    "polaroids": [
+      "gallery-1.webp"
+    ]
+  },
+  "divya": {
+    "hero": "hero.webp",
+    "thumbnail": "thumbnail.webp",
+    "carousel": [
+      "1.webp",
+      "2.webp",
+      "3.webp",
+      "4.webp",
+      "5.webp"
+    ],
+    "polaroids": [
+      "gallery-1.webp",
+      "gallery-2.webp",
+      "gallery-3.webp"
+    ]
+  },
+  "Engagement": {
+    "hero": "hero.webp",
+    "thumbnail": "thumbnail.webp",
+    "carousel": [],
+    "polaroids": [
+      "gallery-1.webp",
+      "gallery-10.webp",
+      "gallery-2.webp",
+      "gallery-3.webp",
+      "gallery-4.webp",
+      "gallery-5.webp",
+      "gallery-6.webp",
+      "gallery-7.webp",
+      "gallery-8.webp",
+      "gallery-9.webp"
+    ]
+  },
+  "Haldi": {
+    "hero": "hero.webp",
+    "thumbnail": "thumbnail.webp",
+    "carousel": [],
+    "polaroids": [
+      "gallery-1.webp",
+      "gallery-2.webp",
+      "gallery-3.webp",
+      "gallery-4.webp",
+      "gallery-5.webp",
+      "gallery-6.webp",
+      "gallery-7.webp",
+      "gallery-8.webp"
+    ]
+  },
+  "Jewels": {
+    "hero": "hero.webp",
+    "thumbnail": "thumbnail.webp",
+    "carousel": [
+      "1.webp",
+      "2.webp",
+      "3.webp",
+      "4.webp"
+    ],
+    "polaroids": [
+      "gallery-1.webp"
+    ]
+  },
+  "Malika Pre wedding": {
+    "hero": "hero.webp",
+    "thumbnail": "thumbnail.webp",
+    "carousel": [],
+    "polaroids": [
+      "gallery-1.webp",
+      "gallery-2.webp",
+      "gallery-3.webp",
+      "gallery-4.webp",
+      "gallery-5.webp",
+      "gallery-6.webp"
+    ]
+  },
+  "Pre wedding": {
+    "hero": "hero.webp",
+    "thumbnail": "thumbnail.webp",
+    "carousel": [],
+    "polaroids": [
+      "gallery-1.webp",
+      "gallery-2.webp",
+      "gallery-3.webp",
+      "gallery-4.webp",
+      "gallery-5.webp"
+    ]
+  },
+  "Purnima": {
+    "hero": "hero.webp",
+    "thumbnail": "thumbnail.webp",
+    "carousel": [],
+    "polaroids": [
+      "gallery-1.webp",
+      "gallery-2.webp"
+    ]
+  },
+  "test": {
+    "hero": "",
+    "thumbnail": "",
+    "carousel": [],
+    "polaroids": []
+  },
+  "Wedding": {
+    "hero": "hero.webp",
+    "thumbnail": "thumbnail.webp",
+    "carousel": [],
+    "polaroids": [
+      "gallery-1.webp",
+      "gallery-2.webp",
+      "gallery-3.webp",
+      "gallery-4.webp",
+      "gallery-5.webp",
+      "gallery-6.webp",
+      "gallery-7.webp",
+      "gallery-8.webp"
+    ]
+  }
+}
