@@ -6,8 +6,8 @@ import { loadDescriptions, Description } from '../../services/descriptionService
 import { resolvePublicUrl as resolveUrl } from '../../utils/resolveUrl';
 
 // Fix #6: Module-level constants — not recreated on every render
-const REPO_OWNER = 'manojkakitha';
-const REPO_NAME = 'Vardhan-Vishnu';
+const REPO_OWNER = 'Vardhanvishnunef';
+const REPO_NAME = 'Vardhan-Vishnu-nef';
 
 interface Props {
     onNavigate: (page: Page) => void;
