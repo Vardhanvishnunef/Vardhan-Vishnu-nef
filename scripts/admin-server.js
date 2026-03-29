@@ -5,6 +5,7 @@ import cors from 'cors';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import sharp from 'sharp';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -19,20 +20,8 @@ const PUBLIC_DIR = path.join(__dirname, '../public');
 const DATA_DIR = path.join(PUBLIC_DIR, 'data');
 const IMAGES_DIR = path.join(PUBLIC_DIR, 'images');
 
-// Configure multer for file uploads
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        const { folder } = req.body; // e.g., 'stories/my-story'
-        const dest = path.join(IMAGES_DIR, folder);
-        if (!fs.existsSync(dest)) {
-            fs.mkdirSync(dest, { recursive: true });
-        }
-        cb(null, dest);
-    },
-    filename: (req, file, cb) => {
-        cb(null, file.originalname);
-    }
-});
+// Configure multer for memory uploads (files are kept in RAM until processed)
+const storage = multer.memoryStorage();
 
 const upload = multer({ storage });
 
@@ -109,13 +98,43 @@ app.post('/api/save-metadata', (req, res) => {
     }
 });
 
-// 5. Upload images
-app.post('/api/upload', upload.array('images'), (req, res) => {
+// 5. Upload images with Pipeline
+app.post('/api/upload', upload.array('images'), async (req, res) => {
     try {
-        console.log(`Uploaded ${req.files.length} images.`);
-        res.json({ success: true, files: req.files.map(f => f.filename) });
+        const { folder } = req.body; // e.g., 'stories/my-story'
+        if (!folder) {
+            return res.status(400).json({ error: 'Folder path is required' });
+        }
+
+        const dest = path.join(IMAGES_DIR, folder);
+        if (!fs.existsSync(dest)) {
+            fs.mkdirSync(dest, { recursive: true });
+        }
+
+        const processedFiles = [];
+
+        // Process each uploaded file
+        for (const file of req.files) {
+            const baseName = path.parse(file.originalname).name;
+            const finalFilename = `${baseName}.webp`; // Always convert to WebP
+            const finalPath = path.join(dest, finalFilename);
+
+            // Our High-Quality Compression Pipeline
+            await sharp(file.buffer)
+                .resize({
+                    width: 2560,             // Cap width to 2560px for great 4K display loading fast
+                    withoutEnlargement: true // Never scale up a small image natively (keeps it sharp)
+                })
+                .webp({ quality: 85 })       // High quality compression, invisible to naked eye vs 100
+                .toFile(finalPath);
+            
+            processedFiles.push(finalFilename);
+        }
+
+        console.log(`Uploaded and processed ${processedFiles.length} images to ${folder}.`);
+        res.json({ success: true, files: processedFiles });
     } catch (error) {
-        console.error('Error uploading images:', error);
+        console.error('Error processing/uploading images:', error);
         res.status(500).json({ error: error.message });
     }
 });
