@@ -495,7 +495,7 @@ const AdminDashboard: React.FC<Props> = ({ onNavigate }) => {
                                                     className="bg-white p-6 border border-stone-200 flex gap-6 group hover:border-primary/30 transition-all shadow-sm"
                                                 >
                                                     <div className="w-40 h-40 bg-limestone overflow-hidden border border-stone-100 relative shrink-0">
-                                                        <img src={img} className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all" alt="Story" />
+                                                        <img src={resolveUrl(img)} className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all" alt="Story" />
                                                         <span className="absolute bottom-2 right-2 bg-black/80 text-white text-[8px] px-2 py-0.5 rounded-full font-bold">#{idx + 1}</span>
                                                     </div>
                                                     <div className="flex-1 space-y-4">

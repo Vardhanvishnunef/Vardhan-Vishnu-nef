@@ -1,5 +1,5 @@
-
 import { StoryData } from '../types';
+import { resolvePublicUrl } from './resolveUrl';
 
 // Define the shape of the metadata.json
 // heroImage and thumbnailUrl are now optional in JSON as they will be auto-detected
@@ -50,9 +50,9 @@ export const getAllStories = (): StoryData[] => {
             const heroKey = Object.keys(imageModules).find(key =>
                 key.startsWith(`${storyFolderPath}/hero.`)
             );
-            heroImage = heroKey ? `https://svqkjpmbbdppdounyusu.supabase.co/storage/v1/object/public/portfolio-images/${heroKey.replace(/^\/public\/images\//, '')}` : '';
+            heroImage = heroKey ? resolvePublicUrl(heroKey) : '';
         } else if (heroImage.includes('images/stories')) {
-            heroImage = `https://svqkjpmbbdppdounyusu.supabase.co/storage/v1/object/public/portfolio-images/${heroImage.replace('images/', '')}`;
+            heroImage = resolvePublicUrl(heroImage);
         }
 
         // Auto-detect thumbnail if not provided
@@ -61,9 +61,9 @@ export const getAllStories = (): StoryData[] => {
             const thumbKey = Object.keys(imageModules).find(key =>
                 key.startsWith(`${storyFolderPath}/thumbnail.`)
             );
-            thumbnailUrl = thumbKey ? `https://svqkjpmbbdppdounyusu.supabase.co/storage/v1/object/public/portfolio-images/${thumbKey.replace(/^\/public\/images\//, '')}` : '';
+            thumbnailUrl = thumbKey ? resolvePublicUrl(thumbKey) : '';
         } else if (thumbnailUrl.includes('images/stories')) {
-            thumbnailUrl = `https://svqkjpmbbdppdounyusu.supabase.co/storage/v1/object/public/portfolio-images/${thumbnailUrl.replace('images/', '')}`;
+            thumbnailUrl = resolvePublicUrl(thumbnailUrl);
         }
 
         return {

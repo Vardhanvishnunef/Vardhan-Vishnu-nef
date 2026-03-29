@@ -17,7 +17,9 @@ const App: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<Page>('cover');
 
   useEffect(() => {
-    if (window.location.hash === '#admin') {
+    const p = window.location.pathname;
+    const h = window.location.hash;
+    if (h === '#admin' || p.includes('/admin') || p.includes('/auth')) {
       setCurrentPage('admin');
     }
   }, []);

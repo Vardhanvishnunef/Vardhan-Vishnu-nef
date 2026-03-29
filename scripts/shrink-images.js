@@ -4,7 +4,7 @@ import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const IMAGES_DIR = path.join(__dirname, '../public/images/stories');
+const IMAGES_DIR = path.join(__dirname, '../public/images');
 
 function shrinkFiles(dir) {
     const items = fs.readdirSync(dir);
@@ -12,7 +12,7 @@ function shrinkFiles(dir) {
     for (const item of items) {
         const full = path.join(dir, item);
         if (fs.statSync(full).isDirectory()) count += shrinkFiles(full);
-        else if (item.endsWith('.webp') || item.endsWith('.jpg') || item.endsWith('.png')) {
+        else if ((item.endsWith('.webp') || item.endsWith('.jpg') || item.endsWith('.png')) && item !== 'logo.webp') {
             fs.writeFileSync(full, "");
             count++;
         }

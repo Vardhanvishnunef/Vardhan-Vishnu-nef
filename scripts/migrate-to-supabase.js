@@ -8,7 +8,7 @@ import { createClient } from '@supabase/supabase-js';
 dotenv.config({ path: '.env.local' });
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL;
-const supabaseKey = process.env.VITE_SUPABASE_SERVICE_ROLE_KEY; // Using Service Role Key to bypass RLS
+const supabaseKey = process.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
 
 if (!supabaseUrl || !supabaseKey) {
     console.error('Missing Supabase credentials (specifically Service Role key) in .env.local');
@@ -19,22 +19,22 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const IMAGES_DIR = path.join(__dirname, '../public/images/stories');
+const IMAGES_DIR = path.join(__dirname, '../public/images');
 
 async function uploadFolder(localPath, remotePrefix) {
+    if (!fs.existsSync(localPath)) return;
     const items = fs.readdirSync(localPath);
     for (const item of items) {
         const fullPath = path.join(localPath, item);
         const stat = fs.statSync(fullPath);
         
         if (stat.isDirectory()) {
-            await uploadFolder(fullPath, `${remotePrefix}/${item}`);
-        } else if (item.endsWith('.webp') || item.endsWith('.jpg') || item.endsWith('.png')) {
-            const remotePath = `${remotePrefix}/${item}`;
+            await uploadFolder(fullPath, remotePrefix ? `${remotePrefix}/${item}` : item);
+        } else if ((item.endsWith('.webp') || item.endsWith('.jpg') || item.endsWith('.png')) && item !== 'logo.webp') {
+            const remotePath = remotePrefix ? `${remotePrefix}/${item}` : item;
             
             try {
                 const fileBuffer = fs.readFileSync(fullPath);
-                // Simple mime mapping
                 let mime = 'image/webp';
                 if (item.endsWith('.jpg')) mime = 'image/jpeg';
                 else if (item.endsWith('.png')) mime = 'image/png';
@@ -44,7 +44,7 @@ async function uploadFolder(localPath, remotePrefix) {
                 const { error } = await supabase
                     .storage
                     .from('portfolio-images')
-                    .upload(`stories/${remotePath}`, fileBuffer, {
+                    .upload(`${remotePath}`, fileBuffer, {
                         contentType: mime,
                         upsert: true
                     });
@@ -62,16 +62,8 @@ async function uploadFolder(localPath, remotePrefix) {
 }
 
 async function migrate() {
-    console.log(`Searching for stories in ${IMAGES_DIR}...`);
-    if (!fs.existsSync(IMAGES_DIR)) return console.log("No images found.");
-    
-    const stories = fs.readdirSync(IMAGES_DIR);
-    for (const story of stories) {
-        const storyPath = path.join(IMAGES_DIR, story);
-        if (fs.statSync(storyPath).isDirectory()) {
-             await uploadFolder(storyPath, story);
-        }
-    }
+    console.log(`Migrating all content in ${IMAGES_DIR}...`);
+    await uploadFolder(IMAGES_DIR, "");
     console.log("Migration complete!");
 }
 
