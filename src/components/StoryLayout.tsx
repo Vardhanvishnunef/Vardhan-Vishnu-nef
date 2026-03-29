@@ -25,14 +25,14 @@ const StoryLayout: React.FC<StoryLayoutProps> = ({ story, onNavigate }) => {
 
         const currentCarouselPaths = Object.keys(allCarouselImages).filter(path =>
             path.includes(`/stories/${story.slug}/carousel/`)
-        ).map(path => import.meta.env.BASE_URL + path.replace(/^\/public\//, ''));
+        ).map(path => `https://svqkjpmbbdppdounyusu.supabase.co/storage/v1/object/public/portfolio-images/${path.replace(/^\/public\/images\//, '')}`);
 
         const currentPolaroidPaths = Object.keys(allStoryImages).filter(path =>
             path.includes(`/stories/${story.slug}/`) &&
             !path.includes('hero.') &&
             !path.includes('thumbnail.') &&
             !path.includes('/carousel/')
-        ).map(path => import.meta.env.BASE_URL + path.replace(/^\/public\//, ''));
+        ).map(path => `https://svqkjpmbbdppdounyusu.supabase.co/storage/v1/object/public/portfolio-images/${path.replace(/^\/public\/images\//, '')}`);
 
         const shuffledPolaroids = currentPolaroidPaths.sort(() => 0.5 - Math.random()).slice(0, 6);
 

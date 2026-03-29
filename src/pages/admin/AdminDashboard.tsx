@@ -3,6 +3,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Page, StoryData, SiteConfig, Thought } from '../../types';
 import { getAllStories } from '../../utils/storyLoader';
 import { loadDescriptions, Description } from '../../services/descriptionService';
+import { resolvePublicUrl as resolveUrl } from '../../utils/resolveUrl';
 
 // Fix #6: Module-level constants — not recreated on every render
 const REPO_OWNER = 'manojkakitha';
@@ -334,13 +335,7 @@ const AdminDashboard: React.FC<Props> = ({ onNavigate }) => {
         setPickerTarget(null);
     };
 
-    const resolveUrl = (url: string) => {
-        if (!url) return '';
-        if (url.startsWith('http')) return url;
-        const baseUrl = import.meta.env.BASE_URL || '/';
-        const cleanPath = url.startsWith('/') ? url.substring(1) : url;
-        return `${baseUrl}${cleanPath}`;
-    };
+
 
     return (
         <div className="min-h-screen bg-limestone text-charcoal p-6 md:p-12 font-sans">

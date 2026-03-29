@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Page, SiteConfig } from '../types';
 import Navigation from '../components/Navigation';
 import Logo from '../components/Logo';
+import { resolvePublicUrl } from '../utils/resolveUrl';
 
 interface HomeProps {
   onNavigate: (page: Page) => void;
@@ -48,7 +49,7 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
               <div className="bg-paper p-4 md:p-6 shadow-lifted border border-border-paper/40 transition-all duration-500 hover:shadow-floating">
                 <div className="relative aspect-[4/5] overflow-hidden bg-gray-100">
                   <img
-                    src={item.imageUrl}
+                    src={resolvePublicUrl(item.imageUrl)}
                     className="w-full h-full object-cover grayscale contrast-110 brightness-95 group-hover:grayscale-0 group-hover:scale-105 transition-all duration-1000 ease-out"
                     alt={item.title}
                   />

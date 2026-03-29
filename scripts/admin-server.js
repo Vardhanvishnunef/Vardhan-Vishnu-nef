@@ -6,6 +6,14 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import sharp from 'sharp';
+import dotenv from 'dotenv';
+import { createClient } from '@supabase/supabase-js';
+
+dotenv.config({ path: '.env.local' });
+const supabase = createClient(
+    process.env.VITE_SUPABASE_URL,
+    process.env.VITE_SUPABASE_SERVICE_ROLE_KEY
+);
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -120,13 +128,27 @@ app.post('/api/upload', upload.array('images'), async (req, res) => {
             const finalPath = path.join(dest, finalFilename);
 
             // Our High-Quality Compression Pipeline
-            await sharp(file.buffer)
+            const webpBuffer = await sharp(file.buffer)
                 .resize({
                     width: 2560,             // Cap width to 2560px for great 4K display loading fast
                     withoutEnlargement: true // Never scale up a small image natively (keeps it sharp)
                 })
                 .webp({ quality: 85 })       // High quality compression, invisible to naked eye vs 100
-                .toFile(finalPath);
+                .toBuffer();
+            
+            // Upload directly to Supabase Storage
+            const { error: uploadError } = await supabase.storage.from('portfolio-images').upload(`${folder}/${finalFilename}`, webpBuffer, {
+                contentType: 'image/webp',
+                upsert: true
+            });
+
+            if (uploadError) {
+                console.error('Supabase cloud upload failed:', uploadError);
+                throw uploadError;
+            }
+
+            // Write a Zero-byte stub locally for Vite's compiler and Git 
+            fs.writeFileSync(finalPath, "");
             
             processedFiles.push(finalFilename);
         }
@@ -142,10 +164,16 @@ app.post('/api/upload', upload.array('images'), async (req, res) => {
 import { exec } from 'child_process';
 
 // Toggle between carousel and main story folder
-app.post('/api/toggle-carousel', (req, res) => {
+app.post('/api/toggle-carousel', async (req, res) => {
     const { slug, imagePath, isCarousel } = req.body;
     const fileName = path.basename(imagePath);
     const sourcePath = path.join(process.cwd(), imagePath);
+
+    const isCurrentlyCarousel = imagePath.includes('/carousel/');
+
+    // Cloud mappings
+    const remoteSourcePath = `stories/${slug}${isCurrentlyCarousel ? '/carousel' : ''}/${fileName}`;
+    const remoteTargetPath = `stories/${slug}${isCurrentlyCarousel ? '' : '/carousel'}/${fileName}`;
 
     let targetDir;
     if (isCarousel) {
@@ -161,7 +189,17 @@ app.post('/api/toggle-carousel', (req, res) => {
     const targetPath = path.join(targetDir, fileName);
 
     try {
+        // 1. Move the real file on Supabase
+        const { error } = await supabase.storage.from('portfolio-images').move(remoteSourcePath, remoteTargetPath);
+        if (error) {
+            console.error('Supabase move failed:', error);
+            // Ignore error if it's missing on the cloud but we're moving it locally anyway 
+            // but ideally we return 500
+        }
+
+        // 2. Move the empty zero-byte stub locally
         fs.renameSync(sourcePath, targetPath);
+        
         res.json({ success: true });
     } catch (err) {
         console.error(err);

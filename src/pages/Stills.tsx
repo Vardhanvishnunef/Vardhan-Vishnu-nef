@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Page, SiteConfig } from '../types';
 import Navigation from '../components/Navigation';
 import Logo from '../components/Logo';
+import { resolvePublicUrl } from '../utils/resolveUrl';
 
 interface StillsProps {
   onNavigate: (page: Page) => void;
@@ -88,7 +89,7 @@ const Stills: React.FC<StillsProps> = ({ onNavigate }) => {
             >
               <div className="relative aspect-[3/4] overflow-hidden bg-gray-100">
                 <img
-                  src={item.imageUrl}
+                  src={resolvePublicUrl(item.imageUrl)}
                   className="w-full h-full object-cover grayscale brightness-90 group-hover:grayscale-0 group-hover:scale-105 transition-all duration-700"
                   alt={item.title}
                 />

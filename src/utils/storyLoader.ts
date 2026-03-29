@@ -47,13 +47,12 @@ export const getAllStories = (): StoryData[] => {
         // Auto-detect hero image if not provided
         let heroImage = metadata.heroImage;
         if (!heroImage) {
-            // value is the resolved URL path (e.g., /src/assets/...) or public path
-            // keys in imageModules are like /public/images/stories/divya/hero.webp
-            // Manually construct path to avoid import/asset ambiguities with public folder
             const heroKey = Object.keys(imageModules).find(key =>
                 key.startsWith(`${storyFolderPath}/hero.`)
             );
-            heroImage = heroKey ? import.meta.env.BASE_URL + heroKey.replace(/^\/public\//, '') : '';
+            heroImage = heroKey ? `https://svqkjpmbbdppdounyusu.supabase.co/storage/v1/object/public/portfolio-images/${heroKey.replace(/^\/public\/images\//, '')}` : '';
+        } else if (heroImage.includes('images/stories')) {
+            heroImage = `https://svqkjpmbbdppdounyusu.supabase.co/storage/v1/object/public/portfolio-images/${heroImage.replace('images/', '')}`;
         }
 
         // Auto-detect thumbnail if not provided
@@ -62,7 +61,9 @@ export const getAllStories = (): StoryData[] => {
             const thumbKey = Object.keys(imageModules).find(key =>
                 key.startsWith(`${storyFolderPath}/thumbnail.`)
             );
-            thumbnailUrl = thumbKey ? import.meta.env.BASE_URL + thumbKey.replace(/^\/public\//, '') : '';
+            thumbnailUrl = thumbKey ? `https://svqkjpmbbdppdounyusu.supabase.co/storage/v1/object/public/portfolio-images/${thumbKey.replace(/^\/public\/images\//, '')}` : '';
+        } else if (thumbnailUrl.includes('images/stories')) {
+            thumbnailUrl = `https://svqkjpmbbdppdounyusu.supabase.co/storage/v1/object/public/portfolio-images/${thumbnailUrl.replace('images/', '')}`;
         }
 
         return {

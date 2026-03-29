@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { SiteConfig } from '../types';
 import Logo from '../components/Logo';
+import { resolvePublicUrl } from '../utils/resolveUrl';
 
 interface CoverProps {
   onOpen: () => void;
@@ -28,7 +29,7 @@ const Cover: React.FC<CoverProps> = ({ onOpen }) => {
       <div className="w-full max-w-lg space-y-12">
         <div className="relative aspect-[4/5] overflow-hidden grayscale contrast-125 transition-all duration-1000 group-hover:grayscale-0 group-hover:scale-[1.02] shadow-lifted">
           <img
-            src={config.cover.hero}
+            src={resolvePublicUrl(config.cover.hero)}
             alt="Cover Hero"
             className="w-full h-full object-cover"
           />
