@@ -1,7 +1,8 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Page, SiteConfig } from '../types';
 import Navigation from '../components/Navigation';
 import Logo from '../components/Logo';
+import { resolvePublicUrl } from '../utils/resolveUrl';
 
 interface InfoProps {
   onNavigate: (page: Page) => void;
@@ -9,7 +10,6 @@ interface InfoProps {
 
 const Info: React.FC<InfoProps> = ({ onNavigate }) => {
   const [config, setConfig] = useState<SiteConfig | null>(null);
-  const chatEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const base = import.meta.env.BASE_URL || '/';
@@ -18,10 +18,6 @@ const Info: React.FC<InfoProps> = ({ onNavigate }) => {
       .then(setConfig)
       .catch(err => console.error('Failed to load info config:', err));
   }, []);
-
-  useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [config?.info.creative_thoughts]);
 
   if (!config) return <div className="min-h-screen bg-limestone" />;
 
@@ -41,7 +37,7 @@ const Info: React.FC<InfoProps> = ({ onNavigate }) => {
           <div className="md:col-span-5 space-y-12">
             <div className="bg-paper p-4 shadow-lifted border border-border-paper/40">
               <div className="aspect-[4/5] overflow-hidden grayscale contrast-110">
-                <img src={info.profile} alt={info.name} className="w-full h-full object-cover" />
+                <img src={resolvePublicUrl(info.profile)} alt={info.name} className="w-full h-full object-cover" />
               </div>
             </div>
 
@@ -68,52 +64,31 @@ const Info: React.FC<InfoProps> = ({ onNavigate }) => {
             </div>
           </div>
 
-          {/* Right Column: Creative Thoughts Chat UI */}
+          {/* Right Column: Creative Thoughts */}
           <div className="md:col-span-7 sticky top-32">
-            <div className="bg-paper border border-charcoal shadow-flat flex flex-col h-[700px]">
-              <div className="p-6 border-b border-charcoal bg-charcoal text-white flex justify-between items-center">
-                <div>
-                  <h3 className="text-[10px] font-bold uppercase tracking-widest">Creative Thoughts</h3>
-                  <p className="text-[8px] opacity-60 uppercase font-bold tracking-tighter">Direct Stream of Consciousness</p>
-                </div>
-                <div className="flex gap-1">
-                  <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-                  <span className="text-[8px] font-bold uppercase tracking-widest">Live</span>
-                </div>
-              </div>
-
-              <div className="flex-1 overflow-y-auto p-8 space-y-6 no-scrollbar">
-                {info.creative_thoughts?.map((thought, idx) => (
+            <div className="space-y-2 mb-10">
+              <h2 className="text-[10px] font-bold uppercase tracking-[0.4em] text-muted">Creative Thoughts</h2>
+              <p className="text-[9px] font-bold uppercase tracking-widest text-muted/60">Stream of Consciousness</p>
+            </div>
+            <div className="space-y-6">
+              {info.creative_thoughts?.map((thought, idx) => (
+                <div
+                  key={idx}
+                  className={`flex flex-col ${thought.role === 'admin' ? 'items-end' : 'items-start'}`}
+                >
                   <div
-                    key={idx}
-                    className={`flex flex-col ${thought.role === 'admin' ? 'items-end' : 'items-start'}`}
+                    className={`max-w-[85%] p-5 text-sm font-medium tracking-tight leading-snug ${thought.role === 'admin'
+                      ? 'bg-charcoal text-white'
+                      : 'bg-white border border-charcoal/10 text-charcoal'
+                    }`}
                   >
-                    <div
-                      className={`max-w-[85%] p-5 text-sm font-medium tracking-tight leading-snug shadow-sm transform transition-all hover:scale-[1.01] ${thought.role === 'admin'
-                        ? 'bg-charcoal text-white rounded-l-2xl rounded-tr-2xl'
-                        : 'bg-limestone border border-charcoal/10 text-charcoal rounded-r-2xl rounded-tl-2xl'
-                        }`}
-                    >
-                      {thought.text}
-                    </div>
-                    <span className="text-[8px] font-bold uppercase tracking-widest text-muted mt-2 px-1">
-                      {thought.role === 'admin' ? 'Vardhan' : 'System'} • {idx === info.creative_thoughts.length - 1 ? 'Just now' : 'Archived'}
-                    </span>
+                    {thought.text}
                   </div>
-                ))}
-                <div ref={chatEndRef} />
-              </div>
-
-              <div className="p-6 border-t border-charcoal/10 bg-limestone/50">
-                <div className="flex gap-4">
-                  <div className="flex-1 p-4 bg-white border border-charcoal border-dashed text-[10px] font-bold uppercase tracking-widest text-muted flex items-center justify-center opacity-50 cursor-not-allowed">
-                    Ask a question...
-                  </div>
-                  <button className="px-6 py-4 bg-charcoal text-white text-[10px] font-bold uppercase tracking-widest cursor-not-allowed opacity-50">
-                    Wait
-                  </button>
+                  <span className="text-[8px] font-bold uppercase tracking-widest text-muted mt-2 px-1">
+                    {thought.role === 'admin' ? 'Vardhan' : 'Reflection'}
+                  </span>
                 </div>
-              </div>
+              ))}
             </div>
           </div>
         </div>
