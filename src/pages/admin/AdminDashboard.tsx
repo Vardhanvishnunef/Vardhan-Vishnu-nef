@@ -69,11 +69,12 @@ const AdminDashboard: React.FC<Props> = ({ onNavigate }) => {
         loadDescriptions().then(setDescriptions);
         loadConfig();
 
-        // Auto-sync token from env to localStorage for the session
+        // Auto-sync token from env to localStorage if env changed
         const envToken = import.meta.env.VITE_GITHUB_TOKEN;
-        if (envToken && !localStorage.getItem('gh_token')) {
+        if (envToken && envToken !== localStorage.getItem('gh_token')) {
             localStorage.setItem('gh_token', envToken);
             setGithubToken(envToken);
+            console.log("Admin: Synced GitHub token from environment");
         }
 
         const indexImages = () => {
@@ -111,6 +112,9 @@ const AdminDashboard: React.FC<Props> = ({ onNavigate }) => {
 
         if (!res.ok) {
             const errData = await res.json();
+            if (res.status === 401) {
+                setMessage('Error: GitHub Token is invalid or expired (Bad Credentials).');
+            }
             throw new Error(errData.message || `GitHub API error: ${res.status}`);
         }
 
@@ -351,8 +355,20 @@ const AdminDashboard: React.FC<Props> = ({ onNavigate }) => {
                             <div className={`w-2 h-2 rounded-full ${githubToken ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`} />
                             <span className="text-[8px] font-bold uppercase tracking-widest text-muted">{githubToken ? 'Authenticated' : 'No Token'}</span>
                         </div>
+                        {githubToken && (
+                            <button
+                                onClick={() => {
+                                    localStorage.removeItem('gh_token');
+                                    window.location.reload();
+                                }}
+                                className="px-3 py-2 border border-stone-200 text-[8px] font-bold uppercase tracking-widest hover:bg-stone-50 transition-all text-muted"
+                                title="Clear saved token and reload from environment"
+                            >
+                                Reset Token
+                            </button>
+                        )}
                         {message && <span className={`text-[10px] font-bold uppercase tracking-widest ${message.includes('Error') || message.includes('Failed') ? 'text-red-500' : 'text-green-600'}`}>{message}</span>}
-                        <button onClick={() => onNavigate('home')} className="px-6 py-3 border border-charcoal text-[10px] font-bold uppercase tracking-widest hover:bg-charcoal hover:text-white transition-all">Exit Dashboard</button>
+                        <button onClick={() => onNavigate('home')} className="px-6 py-3 border border-charcoal text-[10px] font-bold uppercase tracking-widest hover:bg-charcoal hover:text-white transition-all shadow-flat">Exit Dashboard</button>
                     </div>
                 </div>
 
