@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Page, SiteConfig } from '../types';
 import Navigation from '../components/Navigation';
 import Logo from '../components/Logo';
+import { resolvePublicUrl } from '../utils/resolveUrl';
 
 interface StackProps {
   onNavigate: (page: Page) => void;
@@ -32,7 +33,7 @@ const Stack: React.FC<StackProps> = ({ onNavigate }) => {
         <div className="grid grid-cols-1 md:grid-cols-12 gap-16 items-start">
           <div className="md:col-span-5">
             <div className="bg-paper p-4 shadow-lifted border border-border-paper/40">
-              <img src={config.stack.main} alt="Stack" className="w-full grayscale brightness-90 hover:grayscale-0 transition-all duration-700" />
+              <img src={resolvePublicUrl(config.stack.main)} alt="Stack" className="w-full grayscale brightness-90 hover:grayscale-0 transition-all duration-700" />
             </div>
           </div>
 

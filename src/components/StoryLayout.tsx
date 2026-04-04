@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Page, StoryData } from '../types';
 import Navigation from './Navigation';
 import Logo from './Logo';
+import { resolvePublicUrl } from '../utils/resolveUrl';
 import { loadDescriptions, Description } from '../services/descriptionService';
 
 interface StoryLayoutProps {
@@ -25,14 +26,14 @@ const StoryLayout: React.FC<StoryLayoutProps> = ({ story, onNavigate }) => {
 
         const currentCarouselPaths = Object.keys(allCarouselImages).filter(path =>
             path.includes(`/stories/${story.slug}/carousel/`)
-        ).map(path => `https://svqkjpmbbdppdounyusu.supabase.co/storage/v1/object/public/portfolio-images/${path.replace(/^\/public\/images\//, '')}`);
+        ).map(path => resolvePublicUrl(path));
 
         const currentPolaroidPaths = Object.keys(allStoryImages).filter(path =>
             path.includes(`/stories/${story.slug}/`) &&
             !path.includes('hero.') &&
             !path.includes('thumbnail.') &&
             !path.includes('/carousel/')
-        ).map(path => `https://svqkjpmbbdppdounyusu.supabase.co/storage/v1/object/public/portfolio-images/${path.replace(/^\/public\/images\//, '')}`);
+        ).map(path => resolvePublicUrl(path));
 
         const shuffledPolaroids = currentPolaroidPaths.sort(() => 0.5 - Math.random()).slice(0, 6);
 
@@ -86,34 +87,51 @@ const StoryLayout: React.FC<StoryLayoutProps> = ({ story, onNavigate }) => {
                 </div>
 
                 {carouselImages.length > 0 ? (
-                    <section className="mb-24 flex justify-center">
-                        <div className="relative group w-fit h-auto max-w-full shadow-lifted">
+                    <section className="mb-24 flex flex-col items-center">
+                        <div className="relative group w-fit h-auto max-w-full shadow-lifted bg-paper/20">
+                            {/* Main Carousel Image with Fade Effect */}
                             <img
+                                key={activeSlide} // Adding key forces a fresh render/transition for the frame
                                 src={carouselImages[activeSlide]}
                                 alt={`Gallery slide ${activeSlide + 1}`}
-                                className="max-h-[80vh] max-w-full w-auto h-auto object-contain transition-all duration-700 block"
+                                className="max-h-[85vh] max-w-full w-auto h-auto object-contain transition-all duration-1000 ease-in-out block animate-[fadeIn_0.8s_ease-out]"
+                                loading="eager"
                             />
+                            
+                            {/* Preload Next/Prev Images */}
+                            <div className="hidden pointer-events-none">
+                                {carouselImages.map((img, i) => (
+                                    <img key={i} src={img} alt="Preload" />
+                                ))}
+                            </div>
+
                             <button
                                 onClick={prevSlide}
-                                className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center bg-white/10 backdrop-blur-md border border-white/20 text-white rounded-full hover:bg-white/20 transition-all opacity-0 group-hover:opacity-100"
+                                className="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 flex items-center justify-center bg-white/20 backdrop-blur-xl border border-white/30 text-white rounded-full hover:bg-white/40 transition-all opacity-0 group-hover:opacity-100 shadow-xl"
                             >
-                                <span className="material-symbols-outlined">chevron_left</span>
+                                <span className="material-symbols-outlined text-2xl">chevron_left</span>
                             </button>
                             <button
                                 onClick={nextSlide}
-                                className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center bg-white/10 backdrop-blur-md border border-white/20 text-white rounded-full hover:bg-white/20 transition-all opacity-0 group-hover:opacity-100"
+                                className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 flex items-center justify-center bg-white/20 backdrop-blur-xl border border-white/30 text-white rounded-full hover:bg-white/40 transition-all opacity-0 group-hover:opacity-100 shadow-xl"
                             >
-                                <span className="material-symbols-outlined">chevron_right</span>
+                                <span className="material-symbols-outlined text-2xl">chevron_right</span>
                             </button>
-                            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2">
+                            
+                            <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex gap-3 px-6 py-3 bg-charcoal/20 backdrop-blur-md rounded-full border border-white/10">
                                 {carouselImages.map((_, idx) => (
                                     <button
                                         key={idx}
                                         onClick={() => setActiveSlide(idx)}
-                                        className={`w-1.5 h-1.5 rounded-full transition-all ${activeSlide === idx ? 'bg-white w-4' : 'bg-white/50 hover:bg-white'}`}
+                                        className={`w-2 h-2 rounded-full transition-all duration-500 ${activeSlide === idx ? 'bg-white w-6 shadow-[0_0_10px_white]' : 'bg-white/40 hover:bg-white/70'}`}
                                     />
                                 ))}
                             </div>
+                        </div>
+                        <div className="mt-8 flex gap-4 opacity-50 text-[10px] font-bold uppercase tracking-[0.3em]">
+                            <span>{activeSlide + 1}</span>
+                            <span className="text-charcoal/20">/</span>
+                            <span>{carouselImages.length}</span>
                         </div>
                     </section>
                 ) : null}

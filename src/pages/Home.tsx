@@ -92,7 +92,7 @@ const Home: React.FC<HomeProps> = ({ onNavigate }) => {
             {config.home?.instagram_grid?.map((url, i) => (
               <div key={i} className="aspect-square bg-paper border border-border-paper shadow-flat overflow-hidden group cursor-pointer">
                 <img
-                  src={url}
+                  src={resolvePublicUrl(url)}
                   className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500"
                   alt="IG item"
                 />

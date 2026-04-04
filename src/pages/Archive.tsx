@@ -2,6 +2,7 @@ import React from 'react';
 import { Page } from '../types';
 import { getAllStories } from '../utils/storyLoader';
 import Navigation from '../components/Navigation';
+import Logo from '../components/Logo';
 
 interface ArchiveListProps {
     onNavigate: (page: Page) => void;
@@ -22,15 +23,18 @@ const ArchiveList: React.FC<ArchiveListProps> = ({ onNavigate }) => {
     };
 
     return (
-        <div className="min-h-screen flex relative">
+        <div className="min-h-screen flex relative bg-limestone/30">
             <aside className="hidden md:flex fixed left-0 top-0 bottom-0 w-24 border-r border-border-paper/40 items-center justify-center pointer-events-none z-10">
                 <h1 className="writing-vertical text-7xl font-extrabold tracking-[0.3em] text-charcoal/5 uppercase select-none whitespace-nowrap">
                     Archive
                 </h1>
             </aside>
 
-            <main className="flex-1 md:ml-24 max-w-4xl pt-16 md:pt-32 pb-40 px-6 md:px-16">
+            <main className="flex-1 md:ml-24 max-w-4xl pt-16 md:pt-24 pb-40 px-6 md:px-16">
                 <header className="mb-16">
+                    <div className="mb-16">
+                        <Logo className="h-10 w-44 md:h-12 md:w-52" interactive variant="dark" />
+                    </div>
                     <div className="md:hidden mb-8" onClick={handleArchiveTitleClick}>
                         <h1 className="text-4xl font-extrabold tracking-widest text-charcoal/10 uppercase">Archive</h1>
                     </div>

@@ -38,8 +38,7 @@ async function uploadFolder(localPath, remotePrefix) {
                 let mime = 'image/webp';
                 if (item.endsWith('.jpg')) mime = 'image/jpeg';
                 else if (item.endsWith('.png')) mime = 'image/png';
-
-                console.log(`Uploading: ${remotePath}...`);
+                console.log(`Uploading: ${remotePath} (${fileBuffer.length} bytes)...`);
                 
                 const { error } = await supabase
                     .storage
