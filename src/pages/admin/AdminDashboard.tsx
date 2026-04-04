@@ -738,6 +738,130 @@ const AdminDashboard: React.FC<Props> = ({ onNavigate }) => {
 
                         {activeTab === 'info' && config && (
                             <div className="space-y-12">
+                                {/* Profile & Bio */}
+                                <div className="bg-white p-10 border border-stone-200 space-y-8">
+                                    <div className="space-y-2">
+                                        <h3 className="text-2xl font-black uppercase tracking-tight">Profile & Bio</h3>
+                                        <p className="text-[10px] font-bold text-muted uppercase tracking-widest">Displayed on the Info page</p>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-6">
+                                        <div className="space-y-1">
+                                            <label className="text-[8px] font-bold uppercase tracking-widest text-muted">Name</label>
+                                            <input
+                                                type="text"
+                                                value={config.info.name}
+                                                onChange={(e) => {
+                                                    const updatedConfig = JSON.parse(JSON.stringify(config));
+                                                    updatedConfig.info.name = e.target.value;
+                                                    setConfig(updatedConfig);
+                                                }}
+                                                className="w-full p-3 border border-stone-200 text-sm font-bold focus:ring-1 focus:ring-primary outline-none"
+                                                placeholder="e.g. VARDHAN VISHNU"
+                                            />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <label className="text-[8px] font-bold uppercase tracking-widest text-muted">Role / Title</label>
+                                            <input
+                                                type="text"
+                                                value={config.info.role}
+                                                onChange={(e) => {
+                                                    const updatedConfig = JSON.parse(JSON.stringify(config));
+                                                    updatedConfig.info.role = e.target.value;
+                                                    setConfig(updatedConfig);
+                                                }}
+                                                className="w-full p-3 border border-stone-200 text-sm font-medium focus:ring-1 focus:ring-primary outline-none"
+                                                placeholder="e.g. Cinematic Photographer"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="text-[8px] font-bold uppercase tracking-widest text-muted">Quote</label>
+                                        <textarea
+                                            value={config.info.quote}
+                                            onChange={(e) => {
+                                                const updatedConfig = JSON.parse(JSON.stringify(config));
+                                                updatedConfig.info.quote = e.target.value;
+                                                setConfig(updatedConfig);
+                                            }}
+                                            className="w-full p-3 border border-stone-200 text-sm font-medium italic focus:ring-1 focus:ring-primary outline-none min-h-[80px]"
+                                            placeholder="Your signature quote..."
+                                        />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="text-[8px] font-bold uppercase tracking-widest text-muted">Bio</label>
+                                        <textarea
+                                            value={config.info.bio}
+                                            onChange={(e) => {
+                                                const updatedConfig = JSON.parse(JSON.stringify(config));
+                                                updatedConfig.info.bio = e.target.value;
+                                                setConfig(updatedConfig);
+                                            }}
+                                            className="w-full p-3 border border-stone-200 text-sm font-medium focus:ring-1 focus:ring-primary outline-none min-h-[120px]"
+                                            placeholder="Your biography..."
+                                        />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="text-[8px] font-bold uppercase tracking-widest text-muted">Availability</label>
+                                        <input
+                                            type="text"
+                                            value={config.info.availability}
+                                            onChange={(e) => {
+                                                const updatedConfig = JSON.parse(JSON.stringify(config));
+                                                updatedConfig.info.availability = e.target.value;
+                                                setConfig(updatedConfig);
+                                            }}
+                                            className="w-full p-3 border border-stone-200 text-sm font-bold focus:ring-1 focus:ring-primary outline-none"
+                                            placeholder="e.g. Booking Winter '25"
+                                        />
+                                    </div>
+                                    <div className="pt-4 border-t border-stone-100 space-y-4">
+                                        <p className="text-[8px] font-bold uppercase tracking-widest text-muted">Contact</p>
+                                        <div className="grid grid-cols-3 gap-4">
+                                            <div className="space-y-1">
+                                                <label className="text-[8px] font-bold uppercase tracking-widest text-muted">Email</label>
+                                                <input
+                                                    type="text"
+                                                    value={config.info.contact.email}
+                                                    onChange={(e) => {
+                                                        const updatedConfig = JSON.parse(JSON.stringify(config));
+                                                        updatedConfig.info.contact.email = e.target.value;
+                                                        setConfig(updatedConfig);
+                                                    }}
+                                                    className="w-full p-3 border border-stone-200 text-xs font-medium focus:ring-1 focus:ring-primary outline-none"
+                                                    placeholder="hello@..."
+                                                />
+                                            </div>
+                                            <div className="space-y-1">
+                                                <label className="text-[8px] font-bold uppercase tracking-widest text-muted">Instagram Handle</label>
+                                                <input
+                                                    type="text"
+                                                    value={config.info.contact.instagram}
+                                                    onChange={(e) => {
+                                                        const updatedConfig = JSON.parse(JSON.stringify(config));
+                                                        updatedConfig.info.contact.instagram = e.target.value;
+                                                        setConfig(updatedConfig);
+                                                    }}
+                                                    className="w-full p-3 border border-stone-200 text-xs font-medium focus:ring-1 focus:ring-primary outline-none"
+                                                    placeholder="username (no @)"
+                                                />
+                                            </div>
+                                            <div className="space-y-1">
+                                                <label className="text-[8px] font-bold uppercase tracking-widest text-muted">Location</label>
+                                                <input
+                                                    type="text"
+                                                    value={config.info.contact.location}
+                                                    onChange={(e) => {
+                                                        const updatedConfig = JSON.parse(JSON.stringify(config));
+                                                        updatedConfig.info.contact.location = e.target.value;
+                                                        setConfig(updatedConfig);
+                                                    }}
+                                                    className="w-full p-3 border border-stone-200 text-xs font-medium focus:ring-1 focus:ring-primary outline-none"
+                                                    placeholder="e.g. Mumbai • Global"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                                 <div className="bg-white p-10 border border-stone-200 space-y-8">
                                     <div className="space-y-2">
                                         <h3 className="text-2xl font-black uppercase tracking-tight">Main Thoughts</h3>
