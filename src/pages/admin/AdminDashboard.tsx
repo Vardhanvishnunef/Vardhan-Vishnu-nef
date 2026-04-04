@@ -570,26 +570,164 @@ const AdminDashboard: React.FC<Props> = ({ onNavigate }) => {
                             <div className="space-y-12">
                                 <div className="space-y-6">
                                     <h3 className="text-2xl font-black uppercase tracking-tight border-b pb-4">Home Carousel</h3>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                    <div className="space-y-4">
                                         {config.home.items.map((item, i) => (
-                                            <div key={i} className="group relative aspect-[4/5] bg-stone-100 border border-stone-200 overflow-hidden shadow-sm">
-                                                <img src={resolveUrl(item.imageUrl)} className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all" alt="" />
-                                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                                    <button onClick={() => handleOpenImagePicker('home', i)} className="px-6 py-2 bg-white text-charcoal text-[10px] font-bold uppercase tracking-widest scale-90 group-hover:scale-100 transition-transform">Replace</button>
+                                            <div key={i} className="bg-white p-6 border border-stone-200 flex gap-6 group hover:border-primary/30 transition-all shadow-sm">
+                                                <div className="w-40 h-48 bg-limestone overflow-hidden border border-stone-100 relative shrink-0">
+                                                    <img src={resolveUrl(item.imageUrl)} className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all" alt="" />
+                                                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                                        <button onClick={() => handleOpenImagePicker('home', i)} className="px-4 py-1.5 bg-white text-charcoal text-[8px] font-bold uppercase tracking-widest">Replace</button>
+                                                    </div>
+                                                    <span className="absolute top-1.5 left-1.5 bg-charcoal/80 text-white text-[8px] font-bold px-2 py-0.5">#{i + 1}</span>
                                                 </div>
-                                                <div className="absolute top-2 left-2 bg-charcoal/80 text-white text-[8px] font-bold px-2 py-0.5">#{i + 1}</div>
+                                                <div className="flex-1 space-y-3">
+                                                    <div className="grid grid-cols-2 gap-3">
+                                                        <div className="space-y-1">
+                                                            <label className="text-[8px] font-bold uppercase tracking-widest text-muted">Title</label>
+                                                            <input
+                                                                type="text"
+                                                                value={item.title || ''}
+                                                                onChange={(e) => {
+                                                                    const updatedConfig = JSON.parse(JSON.stringify(config));
+                                                                    updatedConfig.home.items[i].title = e.target.value;
+                                                                    setConfig(updatedConfig);
+                                                                }}
+                                                                className="w-full p-2 border border-stone-200 text-xs font-bold focus:ring-1 focus:ring-primary outline-none"
+                                                                placeholder="e.g. The Jodhpur Suite"
+                                                            />
+                                                        </div>
+                                                        <div className="space-y-1">
+                                                            <label className="text-[8px] font-bold uppercase tracking-widest text-muted">Subtitle</label>
+                                                            <input
+                                                                type="text"
+                                                                value={item.subtitle || ''}
+                                                                onChange={(e) => {
+                                                                    const updatedConfig = JSON.parse(JSON.stringify(config));
+                                                                    updatedConfig.home.items[i].subtitle = e.target.value;
+                                                                    setConfig(updatedConfig);
+                                                                }}
+                                                                className="w-full p-2 border border-stone-200 text-xs font-medium focus:ring-1 focus:ring-primary outline-none"
+                                                                placeholder="e.g. FILM 01"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                    <div className="grid grid-cols-2 gap-3">
+                                                        <div className="space-y-1">
+                                                            <label className="text-[8px] font-bold uppercase tracking-widest text-muted">Category</label>
+                                                            <input
+                                                                type="text"
+                                                                value={item.category || ''}
+                                                                onChange={(e) => {
+                                                                    const updatedConfig = JSON.parse(JSON.stringify(config));
+                                                                    updatedConfig.home.items[i].category = e.target.value;
+                                                                    setConfig(updatedConfig);
+                                                                }}
+                                                                className="w-full p-2 border border-stone-200 text-xs font-medium focus:ring-1 focus:ring-primary outline-none"
+                                                                placeholder="e.g. Portrait"
+                                                            />
+                                                        </div>
+                                                        <div className="space-y-1">
+                                                            <label className="text-[8px] font-bold uppercase tracking-widest text-muted">Date</label>
+                                                            <input
+                                                                type="text"
+                                                                value={item.date || ''}
+                                                                onChange={(e) => {
+                                                                    const updatedConfig = JSON.parse(JSON.stringify(config));
+                                                                    updatedConfig.home.items[i].date = e.target.value;
+                                                                    setConfig(updatedConfig);
+                                                                }}
+                                                                className="w-full p-2 border border-stone-200 text-xs font-medium focus:ring-1 focus:ring-primary outline-none"
+                                                                placeholder="e.g. 2024"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                    <div className="space-y-1">
+                                                        <label className="text-[8px] font-bold uppercase tracking-widest text-muted">Description</label>
+                                                        <textarea
+                                                            value={item.description || ''}
+                                                            onChange={(e) => {
+                                                                const updatedConfig = JSON.parse(JSON.stringify(config));
+                                                                updatedConfig.home.items[i].description = e.target.value;
+                                                                setConfig(updatedConfig);
+                                                            }}
+                                                            className="w-full p-2 border border-stone-200 text-xs font-medium focus:ring-1 focus:ring-primary outline-none min-h-[60px]"
+                                                            placeholder="Brief description of this piece..."
+                                                        />
+                                                    </div>
+                                                </div>
                                             </div>
                                         ))}
                                     </div>
                                 </div>
                                 <div className="space-y-6">
                                     <h3 className="text-2xl font-black uppercase tracking-tight border-b pb-4">Stills Grid</h3>
-                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                    <div className="space-y-4">
                                         {config.stills.items.map((item, i) => (
-                                            <div key={i} className="group relative aspect-square bg-stone-100 border border-stone-200 overflow-hidden shadow-sm">
-                                                <img src={resolveUrl(item.imageUrl)} className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all" alt="" />
-                                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                                    <button onClick={() => handleOpenImagePicker('stills', i)} className="px-4 py-2 bg-white text-charcoal text-[8px] font-bold uppercase tracking-widest scale-90 group-hover:scale-100 transition-transform">Change</button>
+                                            <div key={i} className="bg-white p-6 border border-stone-200 flex gap-6 group hover:border-primary/30 transition-all shadow-sm">
+                                                <div className="w-36 h-36 bg-limestone overflow-hidden border border-stone-100 relative shrink-0">
+                                                    <img src={resolveUrl(item.imageUrl)} className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all" alt="" />
+                                                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                                        <button onClick={() => handleOpenImagePicker('stills', i)} className="px-4 py-1.5 bg-white text-charcoal text-[8px] font-bold uppercase tracking-widest">Change</button>
+                                                    </div>
+                                                </div>
+                                                <div className="flex-1 space-y-3">
+                                                    <div className="grid grid-cols-3 gap-3">
+                                                        <div className="space-y-1">
+                                                            <label className="text-[8px] font-bold uppercase tracking-widest text-muted">Title</label>
+                                                            <input
+                                                                type="text"
+                                                                value={item.title || ''}
+                                                                onChange={(e) => {
+                                                                    const updatedConfig = JSON.parse(JSON.stringify(config));
+                                                                    updatedConfig.stills.items[i].title = e.target.value;
+                                                                    setConfig(updatedConfig);
+                                                                }}
+                                                                className="w-full p-2 border border-stone-200 text-xs font-bold focus:ring-1 focus:ring-primary outline-none"
+                                                                placeholder="e.g. Eyes of the East"
+                                                            />
+                                                        </div>
+                                                        <div className="space-y-1">
+                                                            <label className="text-[8px] font-bold uppercase tracking-widest text-muted">Category</label>
+                                                            <input
+                                                                type="text"
+                                                                value={item.category || ''}
+                                                                onChange={(e) => {
+                                                                    const updatedConfig = JSON.parse(JSON.stringify(config));
+                                                                    updatedConfig.stills.items[i].category = e.target.value;
+                                                                    setConfig(updatedConfig);
+                                                                }}
+                                                                className="w-full p-2 border border-stone-200 text-xs font-medium focus:ring-1 focus:ring-primary outline-none"
+                                                                placeholder="e.g. Portraits"
+                                                            />
+                                                        </div>
+                                                        <div className="space-y-1">
+                                                            <label className="text-[8px] font-bold uppercase tracking-widest text-muted">Location</label>
+                                                            <input
+                                                                type="text"
+                                                                value={item.location || ''}
+                                                                onChange={(e) => {
+                                                                    const updatedConfig = JSON.parse(JSON.stringify(config));
+                                                                    updatedConfig.stills.items[i].location = e.target.value;
+                                                                    setConfig(updatedConfig);
+                                                                }}
+                                                                className="w-full p-2 border border-stone-200 text-xs font-medium focus:ring-1 focus:ring-primary outline-none"
+                                                                placeholder="e.g. Mumbai, 2023"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                    <div className="space-y-1">
+                                                        <label className="text-[8px] font-bold uppercase tracking-widest text-muted">Description</label>
+                                                        <textarea
+                                                            value={item.description || ''}
+                                                            onChange={(e) => {
+                                                                const updatedConfig = JSON.parse(JSON.stringify(config));
+                                                                updatedConfig.stills.items[i].description = e.target.value;
+                                                                setConfig(updatedConfig);
+                                                            }}
+                                                            className="w-full p-2 border border-stone-200 text-xs font-medium focus:ring-1 focus:ring-primary outline-none min-h-[60px]"
+                                                            placeholder="Brief description of this still..."
+                                                        />
+                                                    </div>
                                                 </div>
                                             </div>
                                         ))}
