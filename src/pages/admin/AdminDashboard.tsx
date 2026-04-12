@@ -24,7 +24,7 @@ const AdminDashboard: React.FC<Props> = ({ onNavigate }) => {
     const [storyImages, setStoryImages] = useState<string[]>([]);
     const [isSaving, setIsSaving] = useState(false);
     const [message, setMessage] = useState('');
-    const [githubToken, setGithubToken] = useState<string>(localStorage.getItem('gh_token') || import.meta.env.VITE_GITHUB_TOKEN || '');
+    const [githubToken, setGithubToken] = useState<string>(sessionStorage.getItem('gh_token') || import.meta.env.VITE_GITHUB_TOKEN || '');
     const [deployLog, setDeployLog] = useState('');
 
     // Story Creation State
@@ -65,17 +65,10 @@ const AdminDashboard: React.FC<Props> = ({ onNavigate }) => {
             else setMessage('Error: Failed to load site-config.json');
         };
 
-        setStories(getAllStories());
+        getAllStories().then(setStories);
         loadDescriptions().then(setDescriptions);
         loadConfig();
 
-        // Auto-sync token from env to localStorage if env changed
-        const envToken = import.meta.env.VITE_GITHUB_TOKEN;
-        if (envToken && envToken !== localStorage.getItem('gh_token')) {
-            localStorage.setItem('gh_token', envToken);
-            setGithubToken(envToken);
-            console.log("Admin: Synced GitHub token from environment");
-        }
 
         const indexImages = () => {
             const images: { url: string; story: string }[] = [];
@@ -358,7 +351,7 @@ const AdminDashboard: React.FC<Props> = ({ onNavigate }) => {
                         {githubToken && (
                             <button
                                 onClick={() => {
-                                    localStorage.removeItem('gh_token');
+                                    sessionStorage.removeItem('gh_token');
                                     window.location.reload();
                                 }}
                                 className="px-3 py-2 border border-stone-200 text-[8px] font-bold uppercase tracking-widest hover:bg-stone-50 transition-all text-muted"

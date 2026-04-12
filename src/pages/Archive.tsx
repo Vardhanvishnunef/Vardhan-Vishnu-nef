@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Page } from '../types';
+import { StoryData } from '../types';
 import { getAllStories } from '../utils/storyLoader';
 import Navigation from '../components/Navigation';
 import Logo from '../components/Logo';
@@ -9,7 +10,12 @@ interface ArchiveListProps {
 }
 
 const ArchiveList: React.FC<ArchiveListProps> = ({ onNavigate }) => {
-    const [clickCount, setClickCount] = React.useState(0);
+    const [clickCount, setClickCount] = useState(0);
+    const [stories, setStories] = useState<StoryData[]>([]);
+
+    useEffect(() => {
+        getAllStories().then(setStories);
+    }, []);
 
     const handleArchiveTitleClick = () => {
         const newCount = clickCount + 1;
@@ -48,7 +54,7 @@ const ArchiveList: React.FC<ArchiveListProps> = ({ onNavigate }) => {
                 </header>
 
                 <div className="flex flex-col space-y-4 md:space-y-[-10px]">
-                    {getAllStories().map((story) => (
+                    {stories.map((story) => (
                         <article
                             key={story.id}
                             onClick={() => {

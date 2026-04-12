@@ -35,7 +35,12 @@ const StoryLayout: React.FC<StoryLayoutProps> = ({ story, onNavigate }) => {
             !path.includes('/carousel/')
         ).map(path => resolvePublicUrl(path));
 
-        const shuffledPolaroids = currentPolaroidPaths.sort(() => 0.5 - Math.random()).slice(0, 6);
+        const arr = currentPolaroidPaths.slice();
+        for (let i = arr.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+        const shuffledPolaroids = arr.slice(0, 6);
 
         if (currentCarouselPaths.length > 0) {
             setCarouselImages(currentCarouselPaths);

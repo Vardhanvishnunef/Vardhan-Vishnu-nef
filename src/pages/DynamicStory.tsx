@@ -13,12 +13,9 @@ const DynamicStory: React.FC<Props> = ({ slug, onNavigate }) => {
     const [story, setStory] = useState<StoryData | null>(null);
 
     useEffect(() => {
-        // In a real async scenario we'd await, but our loader is sync for now
-        // as it uses eager glob imports
-        const data = getStoryBySlug(slug);
-        if (data) {
-            setStory(data);
-        }
+        getStoryBySlug(slug).then(data => {
+            if (data) setStory(data);
+        });
     }, [slug]);
 
     if (!story) {

@@ -122,15 +122,20 @@ const GravityBackground: React.FC = () => {
         }));
         setItems(newItems);
 
+        let rafId: number;
         const handleMouseMove = (e: MouseEvent) => {
-            const nx = (e.clientX / window.innerWidth) - 0.5;
-            const ny = (e.clientY / window.innerHeight) - 0.5;
-            mouseX.set(nx);
-            mouseY.set(ny);
+            cancelAnimationFrame(rafId);
+            rafId = requestAnimationFrame(() => {
+                mouseX.set((e.clientX / window.innerWidth) - 0.5);
+                mouseY.set((e.clientY / window.innerHeight) - 0.5);
+            });
         };
 
         window.addEventListener('mousemove', handleMouseMove);
-        return () => window.removeEventListener('mousemove', handleMouseMove);
+        return () => {
+            window.removeEventListener('mousemove', handleMouseMove);
+            cancelAnimationFrame(rafId);
+        };
     }, [mouseX, mouseY]);
 
     return (

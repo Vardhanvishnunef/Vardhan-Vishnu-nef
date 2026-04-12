@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { Page } from './types';
 import Cover from './pages/Cover';
 import Home from './pages/Home';
@@ -10,8 +10,9 @@ import DynamicStory from './pages/DynamicStory';
 import GravityBackground from './components/GravityBackground';
 import { ThemeProvider } from './components/ThemeContext';
 import ThemeToggle from './components/ThemeToggle';
-import AdminLogin from './pages/admin/AdminLogin';
-import AdminDashboard from './pages/admin/AdminDashboard';
+
+const AdminLogin = lazy(() => import('./pages/admin/AdminLogin'));
+const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
 
 const App: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<Page>('cover');
@@ -49,7 +50,9 @@ const App: React.FC = () => {
         <GravityBackground />
         <ThemeToggle />
         <div className="relative z-10">
-          {renderPage()}
+          <Suspense fallback={null}>
+            {renderPage()}
+          </Suspense>
         </div>
       </div>
     </ThemeProvider>
